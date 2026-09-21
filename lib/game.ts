@@ -162,18 +162,37 @@ export function bossProgress(state: AppState, id: BossId): BossState {
   return state.bosses[id] ?? { hp: 100, maxHp: 100, defeatedAt: null };
 }
 
-export function bossBarCaption(hp: BossState): string {
+export function bossMeterReadout(hp: BossState): {
+  percent: number;
+  stage: string;
+  caption: string;
+} {
   if (hp.defeatedAt || hp.hp <= 0) {
-    return "きょう、この癖は一回おさまりました。";
+    return {
+      percent: 0,
+      stage: "おさまった",
+      caption: "きょう、この癖は一回おさまりました。",
+    };
   }
+  const percent = Math.round((hp.hp / Math.max(1, hp.maxHp)) * 100);
   const left = Math.max(1, Math.ceil(hp.hp / 25));
-  if (hp.hp >= 80) {
-    return "まだ強い。本番でよく書けて残すと、針が右へ動きます。";
-  }
-  if (left <= 1) {
-    return "もう少し。本番でもう一枚、整えばおさまります。";
-  }
-  return `弱まってきました。整った本番が、あと${left}回ほど。`;
+  const stage =
+    percent >= 85
+      ? "かなり強い"
+      : percent >= 65
+        ? "やや強い"
+        : percent >= 45
+          ? "半分くらい"
+          : percent >= 25
+            ? "弱まってきた"
+            : "もう少し";
+  const caption =
+    percent >= 85
+      ? "本番でよく書けて残すと、このパーセントが下がります。"
+      : left <= 1
+        ? "本番でもう一枚、整えばおさまります。"
+        : `整った本番が、あと${left}回ほど。`;
+  return { percent, stage, caption };
 }
 
 export function pickRoundChar(state: AppState, boss: BossDef): PracticeChar {

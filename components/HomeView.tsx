@@ -98,7 +98,7 @@ export function HomeView() {
       <section className="mt-5">
         <PlaySteps variant="board" />
         <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">
-          通った字が見本帳に残ります。癖の針は、よく書けて残すと右へ動きます。
+          通った字が見本帳に残ります。癖のパーセントは、よく書けて残すと下がります。
         </p>
       </section>
 
