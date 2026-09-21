@@ -162,6 +162,20 @@ export function bossProgress(state: AppState, id: BossId): BossState {
   return state.bosses[id] ?? { hp: 100, maxHp: 100, defeatedAt: null };
 }
 
+export function bossBarCaption(hp: BossState): string {
+  if (hp.defeatedAt || hp.hp <= 0) {
+    return "きょう、この癖は一回おさまりました。";
+  }
+  const left = Math.max(1, Math.ceil(hp.hp / 25));
+  if (hp.hp >= 80) {
+    return "まだ強い。本番でよく書けて残すと、針が右へ動きます。";
+  }
+  if (left <= 1) {
+    return "もう少し。本番でもう一枚、整えばおさまります。";
+  }
+  return `弱まってきました。整った本番が、あと${left}回ほど。`;
+}
+
 export function pickRoundChar(state: AppState, boss: BossDef): PracticeChar {
   const weak = weakestIds(state, 6);
   const fromBoss = boss.characterIds.find((id) => weak.includes(id) && CHAR_BY_ID[id]);

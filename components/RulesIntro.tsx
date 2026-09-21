@@ -59,7 +59,7 @@ export function RulesIntro({
         </div>
 
         <p className="mt-7 text-sm leading-relaxed text-ink-soft">
-          癖には名前があります。本番で通すたびに、弱くなります。
+          癖には名前があります。よく書けて残すと、針が弱いほうへ動きます。
         </p>
 
         <div className="mt-auto pt-8">

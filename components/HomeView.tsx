@@ -24,6 +24,7 @@ import {
 import { PlaySteps } from "./PlaySteps";
 import { PwaInstall } from "./PwaInstall";
 import { RulesIntro } from "./RulesIntro";
+import { BossMeter } from "./BossMeter";
 import type { PracticeChar } from "@/lib/characters";
 
 function greeting(hour: number): string {
@@ -97,9 +98,13 @@ export function HomeView() {
       <section className="mt-5">
         <PlaySteps variant="board" />
         <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">
-          通った字が見本帳に残ります。癖は、通すたびに弱くなります。
+          通った字が見本帳に残ります。癖の針は、よく書けて残すと右へ動きます。
         </p>
       </section>
+
+      <div className="mt-5 rounded-3xl border border-ink/8 bg-white/35 px-5 py-4">
+        <BossMeter name={boss.name} hint={boss.hint} hp={hp} />
+      </div>
 
       <section className="mt-6">
         <p className="text-[11px] tracking-[0.22em] text-gold">きょうのラウンド</p>
@@ -141,20 +146,6 @@ export function HomeView() {
           <p className="mt-1 text-sm text-ink-soft">5字・約3分。相手の名前がわかります。</p>
         </Link>
       )}
-
-      <div className="mt-5 rounded-3xl border border-ink/8 bg-white/35 px-5 py-4">
-        <p className="text-[11px] tracking-[0.2em] text-vermillion">癖 ・ {boss.name}</p>
-        <p className="mt-2 text-sm leading-relaxed">{boss.hint}</p>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/10">
-          <div
-            className="h-full rounded-full bg-vermillion/80"
-            style={{ width: `${(hp.hp / hp.maxHp) * 100}%` }}
-          />
-        </div>
-        <p className="mt-1.5 text-[11px] text-ink-soft">
-          {hp.defeatedAt ? "今日は、この癖を一回通しました。" : `残り ${hp.hp} ・ 本番で通すと減ります`}
-        </p>
-      </div>
 
       {weekly && (
         <section className="mt-6">

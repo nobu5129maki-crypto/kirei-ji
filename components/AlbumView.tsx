@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CHAR_BY_ID, getChar, practicePath } from "@/lib/characters";
 import { BOSSES, bossProgress } from "@/lib/game";
+import { BossMeter } from "./BossMeter";
 import {
   COVER_SCORE,
   loadState,
@@ -118,19 +119,7 @@ export function AlbumView() {
             const hp = bossProgress(state, boss.id);
             return (
               <li key={boss.id} className="rounded-2xl bg-white/40 px-4 py-3">
-                <div className="flex items-baseline justify-between">
-                  <p className="font-serif text-lg">{boss.name}</p>
-                  <p className="text-[12px] text-ink-soft">
-                    {hp.defeatedAt ? "通した" : `残り ${hp.hp}`}
-                  </p>
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink/10">
-                  <div
-                    className="h-full rounded-full bg-vermillion/80"
-                    style={{ width: `${(hp.hp / hp.maxHp) * 100}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-[12px] text-ink-soft">{boss.hint}</p>
+                <BossMeter name={boss.name} hint={boss.hint} hp={hp} />
               </li>
             );
           })}
