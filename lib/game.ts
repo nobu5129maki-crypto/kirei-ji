@@ -237,12 +237,13 @@ export function ensureTodayRound(state: AppState): { state: AppState; round: Tod
     next = ensureBosses(state);
   }
   const live = activeBoss(next);
-  if (next.todayRound && next.todayRound.date === today) {
-    const stored = bossById(next.todayRound.bossId);
+  const existing = next.todayRound;
+  if (existing && existing.date === today) {
+    const stored = bossById(existing.bossId);
     const boss = stored ?? live;
     if (!next.bosses[boss.id]) next = ensureBossRecord(boss.id);
-    const char = getChar(next.todayRound.charId) ?? pickRoundChar(next, boss);
-    return { state: next, round: next.todayRound, char, boss };
+    const char = getChar(existing.charId) ?? pickRoundChar(next, boss);
+    return { state: next, round: existing, char, boss };
   }
   const char = pickRoundChar(next, live);
   const round: TodayRound = {
