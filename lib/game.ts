@@ -198,14 +198,36 @@ export function bossMeterReadout(hp: BossState): {
 }
 
 export function pickRoundChar(state: AppState, boss: BossDef): PracticeChar {
+  const pool = boss.characterIds.filter((id) => CHAR_BY_ID[id]);
   const weak = weakestIds(state, 6);
-  const fromBoss = boss.characterIds.find((id) => weak.includes(id) && CHAR_BY_ID[id]);
+  const fromBoss = pool.find((id) => weak.includes(id));
   if (fromBoss) return CHAR_BY_ID[fromBoss];
-  const weakAny = weak.map((id) => CHAR_BY_ID[id]).find(Boolean);
-  if (weakAny) return weakAny;
   const seed = daySeed(todayStamp());
-  const fromPool = boss.characterIds[seed % boss.characterIds.length];
+  const fromPool = pool[seed % Math.max(1, pool.length)];
   return CHAR_BY_ID[fromPool] ?? CHAR_BY_ID[FUNDAMENTALS[seed % FUNDAMENTALS.length]] ?? CHARACTERS[0];
+}
+
+function bossById(id?: string): BossDef | undefined {
+  return BOSSES.find((b) => b.id === id);
+}
+
+function isRelated(boss: BossDef, char: PracticeChar): boolean {
+  return boss.focuses.includes(char.focus) || boss.characterIds.includes(char.id);
+}
+
+function isLiving(state: AppState, boss: BossDef): boolean {
+  const cur = state.bosses[boss.id];
+  if (cur) return !cur.defeatedAt;
+  return boss.id === "harai" || boss.matches(state.diagnosis);
+}
+
+function ensureBossRecord(id: string): AppState {
+  const state = loadState();
+  if (state.bosses[id]) return state;
+  return setBosses({
+    ...state.bosses,
+    [id]: { hp: 100, maxHp: 100, defeatedAt: null },
+  });
 }
 
 export function ensureTodayRound(state: AppState): { state: AppState; round: TodayRound; char: PracticeChar; boss: BossDef } {
@@ -214,27 +236,51 @@ export function ensureTodayRound(state: AppState): { state: AppState; round: Tod
   if (Object.keys(state.bosses).length === 0 || state.diagnosis) {
     next = ensureBosses(state);
   }
-  const boss = activeBoss(next);
+  const live = activeBoss(next);
   if (next.todayRound && next.todayRound.date === today) {
+    const stored = bossById(next.todayRound.bossId);
+    const boss = stored ?? live;
+    if (!next.bosses[boss.id]) next = ensureBossRecord(boss.id);
     const char = getChar(next.todayRound.charId) ?? pickRoundChar(next, boss);
     return { state: next, round: next.todayRound, char, boss };
   }
-  const char = pickRoundChar(next, boss);
+  const char = pickRoundChar(next, live);
   const round: TodayRound = {
     date: today,
     charId: char.id,
-    bossId: boss.id,
+    bossId: live.id,
   };
   next = setTodayRound(round);
-  return { state: next, round, char, boss };
+  return { state: next, round, char, boss: live };
 }
 
-export function applyAdoptHit(char: PracticeChar, score: number): boolean {
+export function resolveHitBoss(
+  char: PracticeChar,
+  preferredBossId?: string,
+  state = loadState(),
+): BossDef | undefined {
+  const preferred = bossById(preferredBossId);
+  if (preferred && isLiving(state, preferred) && isRelated(preferred, char)) {
+    return preferred;
+  }
+  const roundBoss = bossById(state.todayRound?.bossId);
+  if (roundBoss && isLiving(state, roundBoss) && isRelated(roundBoss, char)) {
+    return roundBoss;
+  }
+  return BOSSES.find((b) => isLiving(state, b) && isRelated(b, char));
+}
+
+export function applyAdoptHit(
+  char: PracticeChar,
+  score: number,
+  preferredBossId?: string,
+): boolean {
   if (score < BOSS_HIT_SCORE) return false;
-  const state = ensureBosses(loadState());
-  const related = relatedLivingBoss(char, state);
+  let state = ensureBosses(loadState());
+  const related = resolveHitBoss(char, preferredBossId, state);
   if (!related) return false;
-  const cur = state.bosses[related.id];
+  if (!state.bosses[related.id]) state = ensureBossRecord(related.id);
+  const cur = loadState().bosses[related.id];
   if (!cur || cur.defeatedAt) return false;
   hitBoss(related.id, score >= COVER_SCORE ? 34 : 25);
   return true;
@@ -244,20 +290,26 @@ export function relatedLivingBoss(
   char: PracticeChar,
   state = loadState(),
 ): BossDef | undefined {
-  const living = BOSSES.filter((b) => {
-    const cur = state.bosses[b.id];
-    return Boolean(cur && !cur.defeatedAt);
-  });
-  return living.find(
-    (b) => b.focuses.includes(char.focus) || b.characterIds.includes(char.id),
-  );
+  return resolveHitBoss(char, undefined, state);
+}
+
+export function huntHref(charId: string, bossId?: string): string {
+  const q = new URLSearchParams({ from: "boss" });
+  if (bossId) q.set("boss", bossId);
+  return `${practicePath(charId)}?${q.toString()}`;
+}
+
+export function charHuntHref(char: PracticeChar, preferredBoss?: BossDef): string {
+  const bossId =
+    preferredBoss && isRelated(preferredBoss, char) ? preferredBoss.id : undefined;
+  return huntHref(char.id, bossId);
 }
 
 export function bossHuntHref(boss: BossDef, preferId?: string): string {
   const ids = boss.characterIds.filter((id) => CHAR_BY_ID[id]);
   const start =
     (preferId && ids.includes(preferId) ? preferId : ids[0]) ?? boss.characterIds[0];
-  return `${practicePath(start)}?from=boss`;
+  return huntHref(start, boss.id);
 }
 
 export function roundHref(charId: string, from = "round"): string {

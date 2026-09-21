@@ -28,7 +28,7 @@ export function CharIndex() {
               {chars.map((c) => (
                 <Link
                   key={c.id}
-                  href={practicePath(c.id)}
+                  href={`${practicePath(c.id)}?from=chars`}
                   className="flex aspect-square items-center justify-center rounded-2xl bg-white/50 font-display text-2xl"
                 >
                   {c.char}

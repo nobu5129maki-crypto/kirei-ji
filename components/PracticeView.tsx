@@ -4,7 +4,7 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FOCUS_LABEL, getChar, practicePath, type PracticeChar } from "@/lib/characters";
-import { applyAdoptHit, isBossHunt, isTwoPhase } from "@/lib/game";
+import { applyAdoptHit, isBossHunt, isTwoPhase, resolveHitBoss } from "@/lib/game";
 import {
   captureSheet,
   recordScore,
@@ -20,16 +20,19 @@ export function PracticeView({
   char,
   queue,
   from,
+  bossId,
 }: {
   char: PracticeChar;
   queue: string[];
   from?: string;
+  bossId?: string;
 }) {
   const router = useRouter();
   const padRef = useRef<WritingPadHandle>(null);
   const twoPhase = isTwoPhase(from);
   const hunting = isBossHunt(from);
   const isScene = from === "scenes";
+  const canKeep = hunting || isScene || queue.length <= 1;
   const [leg, setLeg] = useState<"warmup" | "honban">(twoPhase ? "warmup" : "honban");
   const [ghost, setGhost] = useState(true);
   const [guide, setGuide] = useState(false);
@@ -48,16 +51,18 @@ export function PracticeView({
       ? "/lessons"
       : from === "tips"
         ? "/tips"
-        : from === "progress" || from === "album"
-          ? "/album"
-          : "/";
+        : from === "chars"
+          ? "/chars"
+          : from === "progress" || from === "album"
+            ? "/album"
+            : "/";
 
   const modelLabel = useMemo(
     () => (char.kind === "kanji" ? char.reading : char.kind === "katakana" ? "カタカナ" : "ひらがな"),
     [char],
   );
 
-  const sheetPhase = twoPhase ? leg : hunting || isScene ? "honban" : "free";
+  const sheetPhase = twoPhase ? leg : canKeep ? "honban" : "free";
 
   const onJudge = async () => {
     const canvas = padRef.current?.getInkCanvas();
@@ -83,8 +88,13 @@ export function PracticeView({
       return;
     }
     const q = encodeURIComponent(queue.join(","));
-    const extra = from ? `&from=${encodeURIComponent(from)}` : "";
-    router.push(`${practicePath(nextId)}?queue=${q}${extra}`);
+    const extra = [
+      from ? `from=${encodeURIComponent(from)}` : "",
+      bossId ? `boss=${encodeURIComponent(bossId)}` : "",
+    ]
+      .filter(Boolean)
+      .join("&");
+    router.push(`${practicePath(nextId)}?queue=${q}${extra ? `&${extra}` : ""}`);
   };
 
   const retry = () => {
@@ -109,7 +119,7 @@ export function PracticeView({
       image: inkUrl,
       focus: char.focus,
     });
-    const hit = applyAdoptHit(char, score.overall);
+    const hit = applyAdoptHit(char, score.overall, bossId);
     if (hunting) {
       setScore(null);
       setInkUrl("");
@@ -125,7 +135,7 @@ export function PracticeView({
       goNext();
       return;
     }
-    router.push("/");
+    router.push(backHref);
   };
 
   const stepLabel = hunting
@@ -191,6 +201,9 @@ export function PracticeView({
             onNext={twoPhase && leg === "warmup" ? goHonban : goNext}
             nextLabel={nextChar ? `つぎ（${nextChar.char}）` : "おわる"}
             onAdopt={sheetPhase === "honban" ? adopt : undefined}
+            willCut={
+              sheetPhase === "honban" && Boolean(resolveHitBoss(char, bossId))
+            }
           />
         </div>
       ) : (

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   bossHuntHref,
   bossProgress,
+  charHuntHref,
   ensureTodayRound,
   pickWeeklyChar,
   roundHref,
@@ -118,7 +119,7 @@ export function HomeView() {
           <AdoptedCard
             entry={adopted}
             char={char}
-            href={roundHref(char.id, "boss")}
+            href={charHuntHref(char, boss)}
           />
         ) : (
           <Link

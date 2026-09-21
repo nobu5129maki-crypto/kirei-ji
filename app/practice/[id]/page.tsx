@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { PracticeView } from "@/components/PracticeView";
 import { CHARACTERS, charSlug, getChar, normalizeCharId } from "@/lib/characters";
+import { BOSSES } from "@/lib/game";
 
 export const dynamicParams = true;
 
@@ -13,10 +14,10 @@ export default async function PracticePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ queue?: string; from?: string }>;
+  searchParams: Promise<{ queue?: string; from?: string; boss?: string }>;
 }) {
   const { id: rawId } = await params;
-  const { queue, from } = await searchParams;
+  const { queue, from, boss: rawBoss } = await searchParams;
   const id = normalizeCharId(rawId);
   const char = getChar(id);
   if (!char) notFound();
@@ -26,5 +27,6 @@ export default async function PracticePage({
       : [char.id]
   ).filter((value): value is string => Boolean(value));
   if (!ids.includes(char.id)) ids.unshift(char.id);
-  return <PracticeView char={char} queue={ids} from={from} />;
+  const bossId = BOSSES.some((b) => b.id === rawBoss) ? rawBoss : undefined;
+  return <PracticeView char={char} queue={ids} from={from} bossId={bossId} />;
 }

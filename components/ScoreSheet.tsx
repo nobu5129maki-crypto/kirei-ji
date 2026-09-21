@@ -2,7 +2,6 @@
 
 import type { ScoreBreakdown } from "@/lib/scoring";
 import { FOCUS_LABEL, type PracticeChar } from "@/lib/characters";
-import { relatedLivingBoss } from "@/lib/game";
 import { ADOPT_SCORE, BOSS_HIT_SCORE, COVER_SCORE } from "@/lib/storage";
 
 const axes: { key: keyof Pick<ScoreBreakdown, "size" | "tilt" | "center" | "shape">; label: string }[] = [
@@ -20,6 +19,7 @@ export function ScoreSheet({
   nextLabel,
   phase = "free",
   onAdopt,
+  willCut = false,
 }: {
   char: PracticeChar;
   score: ScoreBreakdown;
@@ -28,6 +28,7 @@ export function ScoreSheet({
   nextLabel?: string;
   phase?: "free" | "warmup" | "honban";
   onAdopt?: () => void;
+  willCut?: boolean;
 }) {
   const passed = !score.empty && score.overall >= ADOPT_SCORE;
   const cover = !score.empty && score.overall >= COVER_SCORE;
@@ -35,7 +36,7 @@ export function ScoreSheet({
     phase === "honban" &&
     !score.empty &&
     score.overall >= BOSS_HIT_SCORE &&
-    Boolean(relatedLivingBoss(char));
+    willCut;
   const verdict = score.empty
     ? "書けたら、見てみるを押してください。"
     : phase === "warmup"

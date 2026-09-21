@@ -65,7 +65,7 @@ export function DiagnoseView() {
           {diagnosis?.note}
         </p>
         <p className="mt-6 text-sm leading-relaxed">
-          これから毎日、一枚。お手本のあと本番。通った字だけ、見本帳に残します。
+          これから毎日、一枚。癖は、気が済むまで何度でも削ってよい。
         </p>
         <div className="mt-6">
           <PlaySteps variant="board" />

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CHAR_BY_ID, getChar, practicePath } from "@/lib/characters";
-import { BOSSES, bossHuntHref, bossProgress } from "@/lib/game";
+import { CHAR_BY_ID, getChar } from "@/lib/characters";
+import { BOSSES, bossHuntHref, bossProgress, huntHref, resolveHitBoss } from "@/lib/game";
 import { BossMeter } from "./BossMeter";
 import {
   COVER_SCORE,
@@ -207,10 +207,7 @@ function CompareSheet({
             ? `${ordered.length}枚残しています。以前といまを重ねて見られます。`
             : "きょう残した一枚です。"}
         </p>
-        <Link
-          href={`${practicePath(char.id)}?from=boss`}
-          className="btn-ink mt-4 w-full"
-        >
+        <Link href={huntHref(char.id, resolveHitBoss(char)?.id)} className="btn-ink mt-4 w-full">
           この字で、癖を削る
         </Link>
       </div>
