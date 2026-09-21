@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  bossHuntHref,
   bossProgress,
   charHuntHref,
   ensureTodayRound,
+  huntHref,
   pickWeeklyChar,
   roundHref,
   sceneHref,
@@ -109,7 +109,7 @@ export function HomeView() {
           name={boss.name}
           hint={boss.hint}
           hp={hp}
-          huntHref={bossHuntHref(boss, char.id)}
+          huntHref={huntHref(char.id, boss.id)}
         />
       </div>
 

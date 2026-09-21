@@ -261,7 +261,7 @@ export function resolveHitBoss(
   state = loadState(),
 ): BossDef | undefined {
   const preferred = bossById(preferredBossId);
-  if (preferred && isLiving(state, preferred) && isRelated(preferred, char)) {
+  if (preferred && isLiving(state, preferred)) {
     return preferred;
   }
   const roundBoss = bossById(state.todayRound?.bossId);

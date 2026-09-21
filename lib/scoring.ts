@@ -81,6 +81,20 @@ function clampScore(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
+function sizeScoreFromMasks(user: Mask, model: Mask): number {
+  const uw = Math.max(1, user.maxX - user.minX + 1);
+  const uh = Math.max(1, user.maxY - user.minY + 1);
+  const mw = Math.max(1, model.maxX - model.minX + 1);
+  const mh = Math.max(1, model.maxY - model.minY + 1);
+  const wr = uw / mw;
+  const hr = uh / mh;
+  const aspect = mw / mh;
+  // 一のような横画は「長さ」、縦に長い字は「高さ」が大きさ。
+  const ratio =
+    aspect >= 2.2 ? wr * 0.82 + hr * 0.18 : aspect <= 0.45 ? hr * 0.82 + wr * 0.18 : Math.sqrt((uw * uh) / (mw * mh));
+  return clampScore(100 - Math.abs(ratio - 1) * 115);
+}
+
 function principalAngle(mask: Mask): number {
   let sxx = 0;
   let syy = 0;
@@ -196,7 +210,11 @@ function commentFor(
   const midY = (mask.minY + mask.maxY) / 2;
 
   if (size < 62) {
-    comments.push("マスの七〜八割を目安に、もう一回り大きく。");
+    comments.push(
+      char.char === "一"
+        ? "短すぎます。マスの左右に、少し余白を残す長さで。"
+        : "マスの七〜八割を目安に、もう一回り大きく。",
+    );
   } else if (size < 78 && fill < 0.28) {
     comments.push("字が小さめです。余白を恐れず、枠の内側いっぱいに。");
   } else if (size > 96) {
@@ -530,14 +548,7 @@ export async function scoreHandwriting(
     };
   }
 
-  const userW = user.maxX - user.minX + 1;
-  const userH = user.maxY - user.minY + 1;
-  const modelW = model.maxX - model.minX + 1;
-  const modelH = model.maxY - model.minY + 1;
-  const userFill = (userW * userH) / (SIZE * SIZE);
-  const modelFill = (modelW * modelH) / (SIZE * SIZE);
-  const fillRatio = userFill / Math.max(0.15, modelFill);
-  const sizeScore = clampScore(100 - Math.abs(fillRatio - 1) * 140);
+  const sizeScore = sizeScoreFromMasks(user, model);
 
   const angleDiff = Math.abs(principalAngle(user) - principalAngle(model));
   const tiltScore = clampScore(100 - (angleDiff * 180) / Math.PI * 4.2);
