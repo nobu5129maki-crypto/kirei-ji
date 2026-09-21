@@ -118,7 +118,7 @@ export function HomeView() {
           <AdoptedCard
             entry={adopted}
             char={char}
-            href={bossHuntHref(boss, char.id)}
+            href={roundHref(char.id, "boss")}
           />
         ) : (
           <Link
