@@ -4,7 +4,7 @@ import {
   type StrokeFocus,
   practicePath,
 } from "./characters";
-import { SCHOOL_BY_CHAR, SCHOOL_ROWS, rawSchoolId, type SchoolRow } from "./school-rows";
+import { SCHOOL_BY_CHAR, SCHOOL_ROWS, rawSchoolId, readingTip, type SchoolRow } from "./school-rows";
 import { type AppState, todayStamp } from "./storage";
 
 export { SCHOOL_BY_CHAR, SCHOOL_ROWS };
@@ -71,7 +71,7 @@ export function toSchoolChar(row: SchoolRow): PracticeChar {
     focus: guessFocus(row.strokeCount),
     tips: [
       `${grade}で習う字。マスの七〜八割、十字の交点に心臓を。`,
-      `読みは「${row.reading}」。細部より、外の形を先に。`,
+      `${readingTip(row)}。細部より、外の形を先に。`,
     ],
     mistakes: ["小さくなる", "中心が寄る"],
   };

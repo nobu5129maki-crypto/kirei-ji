@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CHAR_BY_ID, getChar } from "@/lib/characters";
+import { ReadingLine } from "./ReadingLine";
 import {
   BOSSES,
   bossProgress,
@@ -170,7 +171,7 @@ function CompareSheet({
       <div className="max-h-[88dvh] w-full max-w-[400px] overflow-auto rounded-3xl bg-paper px-4 py-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[11px] tracking-[0.2em] text-gold">{char.reading}</p>
+            <ReadingLine char={char} className="text-[11px] leading-relaxed text-ink-soft" />
             <h2 className="font-serif text-3xl">{char.char}</h2>
           </div>
           <button type="button" onClick={onClose} className="text-sm text-ink-soft">

@@ -15,6 +15,7 @@ import { PlaySteps, type PlayBeat } from "./PlaySteps";
 import { scoreHandwriting, type ScoreBreakdown } from "@/lib/scoring";
 import { StrokeGuide } from "./StrokeGuide";
 import { WritingPad, type WritingPadHandle } from "./WritingPad";
+import { ReadingLine } from "./ReadingLine";
 import { ScoreSheet } from "./ScoreSheet";
 
 export function PracticeView({
@@ -197,8 +198,9 @@ export function PracticeView({
         <div>
           <p className="text-[11px] tracking-[0.22em] text-gold">{modelLabel}</p>
           <h1 className="font-serif text-3xl leading-none">{char.char}</h1>
-          <p className="mt-1 text-sm text-ink-soft">
-            {char.reading} ・ {char.strokeCount}画 ・ {FOCUS_LABEL[char.focus]}
+          <ReadingLine char={char} large={dictation} className="mt-1 text-sm leading-relaxed text-ink-soft" />
+          <p className="mt-0.5 text-[12px] text-ink-soft">
+            {char.strokeCount}画 ・ {FOCUS_LABEL[char.focus]}
           </p>
         </div>
         <div className="font-display text-5xl text-ink/90">{char.char}</div>

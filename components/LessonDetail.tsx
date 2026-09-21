@@ -4,6 +4,7 @@ import Link from "next/link";
 import { lessonChars, type Lesson } from "@/lib/lessons";
 import { queueHref } from "@/lib/daily";
 import { practicePath } from "@/lib/characters";
+import { ReadingLine } from "./ReadingLine";
 
 export function LessonDetail({ lesson }: { lesson: Lesson }) {
   const chars = lessonChars(lesson);
@@ -38,7 +39,7 @@ export function LessonDetail({ lesson }: { lesson: Lesson }) {
                 {c.char}
               </span>
               <span className="flex-1">
-                <span className="block text-sm">{c.reading}</span>
+                <ReadingLine char={c} className="block text-sm text-ink" />
                 <span className="block text-[12px] text-ink-soft">{c.tips[0]}</span>
               </span>
               <span className="text-ink-soft">→</span>

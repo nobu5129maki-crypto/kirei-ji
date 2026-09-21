@@ -1,4 +1,4 @@
-import { SCHOOL_BY_CHAR, rawSchoolId } from "./school-rows";
+import { SCHOOL_BY_CHAR, rawSchoolId, readingTip } from "./school-rows";
 
 export type CharKind = "hiragana" | "katakana" | "kanji" | "form";
 
@@ -624,7 +624,7 @@ function lookupSchoolChar(id: string): PracticeChar | undefined {
     focus: row.strokeCount <= 1 ? "line" : row.strokeCount <= 7 ? "balance" : "center",
     tips: [
       `${grade}で習う字。マスの七〜八割、十字の交点に心臓を。`,
-      `読みは「${row.reading}」。細部より、外の形を先に。`,
+      `${readingTip(row)}。細部より、外の形を先に。`,
     ],
     mistakes: ["小さくなる", "中心が寄る"],
   };

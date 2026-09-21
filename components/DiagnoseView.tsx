@@ -8,6 +8,7 @@ import { markOnboarded, recordScore, type Diagnosis } from "@/lib/storage";
 import { scoreHandwriting, summarizeDiagnosis } from "@/lib/scoring";
 import { WritingPad, type WritingPadHandle } from "./WritingPad";
 import { PlaySteps } from "./PlaySteps";
+import { ReadingLine } from "./ReadingLine";
 
 const ids = [...DIAGNOSE_IDS];
 
@@ -96,7 +97,7 @@ export function DiagnoseView() {
 
       <div className="mt-4 flex items-end justify-between">
         <p className="font-serif text-4xl">{char.char}</p>
-        <p className="text-sm text-ink-soft">{char.reading}</p>
+        <ReadingLine char={char} className="text-sm text-ink-soft" />
       </div>
 
       <div className="mt-3 overflow-hidden rounded-[22px] border border-ink/10">

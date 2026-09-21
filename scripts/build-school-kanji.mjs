@@ -5,23 +5,29 @@ const dest = process.argv[3] ?? "lib/school-kanji-data.ts";
 const raw = JSON.parse(readFileSync(src, "utf8"));
 const list = raw.kanji ?? raw;
 
-function kataToHira(s) {
-  return [...s]
-    .map((ch) => {
-      const c = ch.codePointAt(0);
-      return c >= 0x30a1 && c <= 0x30f6 ? String.fromCodePoint(c - 0x60) : ch;
-    })
-    .join("");
+function unique(list) {
+  return [...new Set(list.filter(Boolean))];
+}
+
+function cleanOn(s) {
+  return String(s)
+    .replace(/[-‐.].*$/, "")
+    .replace(/[^ァ-ンー]/g, "");
+}
+
+function cleanKun(s) {
+  const raw = String(s);
+  const [stem, okuri] = raw.split(".");
+  const head = stem.replace(/[-‐].*$/, "").replace(/[^ぁ-ん]/g, "");
+  if (!head) return "";
+  const tail = (okuri ?? "").replace(/[^ぁ-ん]/g, "");
+  return tail ? `${head}（${tail}）` : head;
 }
 
 function cleanReading(k) {
-  const kun = k.readings?.kun?.[0];
-  if (kun) {
-    return kun.split(/[.\-‐]/)[0].replace(/[^ぁ-んァ-ン一-龯]/g, "");
-  }
-  const on = k.readings?.on?.[0];
-  if (on) return kataToHira(on);
-  return "";
+  const kun = unique((k.readings?.kun ?? []).map(cleanKun)).slice(0, 4);
+  const on = unique((k.readings?.on ?? []).map(cleanOn)).slice(0, 4);
+  return { on, kun, display: kun[0] || on[0] || "" };
 }
 
 const rows = [];
@@ -31,8 +37,8 @@ for (const k of list) {
   const grade = Number(k.grade);
   if (![1, 2, 3, 4, 5, 6, 8].includes(grade)) continue;
   const strokes = Number(k.stroke_count) || 0;
-  const reading = cleanReading(k) || ch;
-  rows.push(`${ch}\t${strokes}\t${grade}\t${reading}`);
+  const { on, kun, display } = cleanReading(k);
+  rows.push(`${ch}\t${strokes}\t${grade}\t${display}\t${on.join("、")}\t${kun.join("、")}`);
 }
 
 rows.sort((a, b) => {
@@ -47,7 +53,7 @@ for (const row of rows) {
   counts[g] = (counts[g] ?? 0) + 1;
 }
 
-const body = `/** 常用漢字 ${rows.length} 字。学年は学習指導要領（小1-6・中学=8）。自動生成。 */
+const body = `/** 常用漢字 ${rows.length} 字。学年は学習指導要領（小1-6・中学=8）。音訓つき。自動生成。 */
 export const SCHOOL_KANJI_TSV = \`
 ${rows.join("\n")}
 \`.trim();

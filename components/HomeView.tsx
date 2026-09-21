@@ -27,6 +27,7 @@ import { PlaySteps } from "./PlaySteps";
 import { PwaInstall } from "./PwaInstall";
 import { RulesIntro } from "./RulesIntro";
 import { BossMeter } from "./BossMeter";
+import { ReadingLine } from "./ReadingLine";
 import type { PracticeChar } from "@/lib/characters";
 
 function greeting(hour: number): string {
@@ -174,7 +175,7 @@ export function HomeView() {
               {weekly.char}
             </span>
             <div className="flex-1">
-              <p className="text-sm">{weekly.reading}</p>
+              <ReadingLine char={weekly} className="text-sm text-ink" />
               <p className="text-[12px] text-ink-soft">いちばんいい一枚が、今週の表紙。</p>
             </div>
             <span className="text-ink-soft">→</span>
