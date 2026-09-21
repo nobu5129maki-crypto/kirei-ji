@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   bossProgress,
-  charHuntHref,
   ensureTodayRound,
-  huntHref,
   pickWeeklyChar,
+  todayHuntHref,
   roundHref,
   sceneHref,
   SCENES,
@@ -109,7 +108,7 @@ export function HomeView() {
           name={boss.name}
           hint={boss.hint}
           hp={hp}
-          huntHref={huntHref(char.id, boss.id)}
+          huntHref={todayHuntHref(char, boss, state)}
         />
       </div>
 
@@ -119,7 +118,7 @@ export function HomeView() {
           <AdoptedCard
             entry={adopted}
             char={char}
-            href={charHuntHref(char, boss)}
+            href={todayHuntHref(char, boss, state)}
           />
         ) : (
           <Link

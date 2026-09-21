@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CHAR_BY_ID, getChar } from "@/lib/characters";
-import { BOSSES, bossHuntHref, bossProgress, huntHref, resolveHitBoss } from "@/lib/game";
+import {
+  BOSSES,
+  bossProgress,
+  ensureTodayRound,
+  huntHref,
+  meterHuntHref,
+  resolveHitBoss,
+} from "@/lib/game";
 import { BossMeter } from "./BossMeter";
 import {
   COVER_SCORE,
@@ -18,6 +25,7 @@ export function AlbumView() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
+    ensureTodayRound(loadState());
     setState(loadState());
   }, []);
 
@@ -88,6 +96,7 @@ export function AlbumView() {
         <CompareSheet
           charId={openId}
           entries={state.album.filter((a) => a.charId === openId)}
+          today={state.todayRound}
           onClose={() => setOpenId(null)}
         />
       )}
@@ -123,7 +132,7 @@ export function AlbumView() {
                   name={boss.name}
                   hint={boss.hint}
                   hp={hp}
-                  huntHref={bossHuntHref(boss)}
+                  huntHref={meterHuntHref(boss, state.todayRound)}
                 />
               </li>
             );
@@ -137,10 +146,12 @@ export function AlbumView() {
 function CompareSheet({
   charId,
   entries,
+  today,
   onClose,
 }: {
   charId: string;
   entries: AlbumEntry[];
+  today: AppState["todayRound"];
   onClose: () => void;
 }) {
   const char = getChar(charId);
@@ -207,7 +218,13 @@ function CompareSheet({
             ? `${ordered.length}枚残しています。以前といまを重ねて見られます。`
             : "きょう残した一枚です。"}
         </p>
-        <Link href={huntHref(char.id, resolveHitBoss(char)?.id)} className="btn-ink mt-4 w-full">
+        <Link
+          href={huntHref(
+            char.id,
+            resolveHitBoss(char, today?.charId === char.id ? today.bossId : undefined)?.id,
+          )}
+          className="btn-ink mt-4 w-full"
+        >
           この字で、癖を削る
         </Link>
       </div>

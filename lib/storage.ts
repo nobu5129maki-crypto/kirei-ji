@@ -187,6 +187,7 @@ export function captureSheet(source: HTMLCanvasElement): string {
 
 export function saveAlbumEntry(
   entry: Omit<AlbumEntry, "id" | "date">,
+  opts?: { keepAsToday?: boolean },
 ): AlbumEntry {
   const today = todayStamp();
   const saved: AlbumEntry = {
@@ -198,6 +199,7 @@ export function saveAlbumEntry(
     ...prev,
     album: [saved, ...prev.album].slice(0, ALBUM_MAX),
     todayRound:
+      opts?.keepAsToday &&
       prev.todayRound &&
       prev.todayRound.date === today &&
       prev.todayRound.charId === entry.charId

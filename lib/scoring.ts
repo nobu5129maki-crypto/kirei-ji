@@ -96,6 +96,11 @@ function sizeScoreFromMasks(user: Mask, model: Mask): number {
 }
 
 function principalAngle(mask: Mask): number {
+  const { sxx, syy, sxy } = secondMoments(mask);
+  return 0.5 * Math.atan2(2 * sxy, sxx - syy);
+}
+
+function secondMoments(mask: Mask): { sxx: number; syy: number; sxy: number } {
   let sxx = 0;
   let syy = 0;
   let sxy = 0;
@@ -110,7 +115,63 @@ function principalAngle(mask: Mask): number {
       sxy += dx * dy;
     }
   }
-  return 0.5 * Math.atan2(2 * sxy, sxx - syy);
+  return { sxx, syy, sxy };
+}
+
+function elongation(mask: Mask): number {
+  const { sxx, syy } = secondMoments(mask);
+  const sum = sxx + syy;
+  return sum <= 0 ? 0 : Math.abs(sxx - syy) / sum;
+}
+
+function topBand(mask: Mask, frac = 0.42): Mask {
+  const cut = mask.minY + (mask.maxY - mask.minY) * frac;
+  const ink = new Uint8Array(mask.ink.length);
+  let count = 0;
+  let minX = mask.w;
+  let minY = mask.h;
+  let maxX = 0;
+  let maxY = 0;
+  let sx = 0;
+  let sy = 0;
+  for (let y = 0; y < mask.h; y++) {
+    if (y > cut) continue;
+    for (let x = 0; x < mask.w; x++) {
+      if (!mask.ink[y * mask.w + x]) continue;
+      ink[y * mask.w + x] = 1;
+      count++;
+      sx += x;
+      sy += y;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  return {
+    ...mask,
+    ink,
+    count,
+    minX: count ? minX : 0,
+    minY: count ? minY : 0,
+    maxX: count ? maxX : 0,
+    maxY: count ? maxY : 0,
+    cx: count ? sx / count : mask.w / 2,
+    cy: count ? sy / count : mask.h / 2,
+  };
+}
+
+function angleDiff(a: number, b: number): number {
+  let d = Math.abs(a - b);
+  if (d > Math.PI / 2) d = Math.PI - d;
+  return d;
+}
+
+function tiltScoreFromMasks(user: Mask, model: Mask): number {
+  const useBand = elongation(user) < 0.28 && elongation(model) < 0.28;
+  const ua = principalAngle(useBand ? topBand(user) : user);
+  const ma = principalAngle(useBand ? topBand(model) : model);
+  return clampScore(100 - (angleDiff(ua, ma) * 180) / Math.PI * 4.2);
 }
 
 function resample(mask: Mask, out = 48): Uint8Array {
@@ -217,7 +278,13 @@ function commentFor(
     );
   } else if (size < 78 && fill < 0.28) {
     comments.push("字が小さめです。余白を恐れず、枠の内側いっぱいに。");
-  } else if (size > 96) {
+  } else if (
+    size > 96 &&
+    (mask.minX < mask.w * 0.05 ||
+      mask.maxX > mask.w * 0.95 ||
+      mask.minY < mask.h * 0.05 ||
+      mask.maxY > mask.h * 0.95)
+  ) {
     comments.push("枠に当たっています。周囲に一画分の余白を残しましょう。");
   }
 
@@ -549,9 +616,7 @@ export async function scoreHandwriting(
   }
 
   const sizeScore = sizeScoreFromMasks(user, model);
-
-  const angleDiff = Math.abs(principalAngle(user) - principalAngle(model));
-  const tiltScore = clampScore(100 - (angleDiff * 180) / Math.PI * 4.2);
+  const tiltScore = tiltScoreFromMasks(user, model);
 
   const dx = (user.cx - SIZE / 2) / SIZE;
   const dy = (user.cy - SIZE / 2) / SIZE;

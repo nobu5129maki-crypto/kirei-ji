@@ -265,7 +265,11 @@ export function resolveHitBoss(
     return preferred;
   }
   const roundBoss = bossById(state.todayRound?.bossId);
-  if (roundBoss && isLiving(state, roundBoss) && isRelated(roundBoss, char)) {
+  if (
+    roundBoss &&
+    isLiving(state, roundBoss) &&
+    (isRelated(roundBoss, char) || state.todayRound?.charId === char.id)
+  ) {
     return roundBoss;
   }
   return BOSSES.find((b) => isLiving(state, b) && isRelated(b, char));
@@ -301,9 +305,12 @@ export function huntHref(charId: string, bossId?: string): string {
 }
 
 export function charHuntHref(char: PracticeChar, preferredBoss?: BossDef): string {
-  const bossId =
-    preferredBoss && isRelated(preferredBoss, char) ? preferredBoss.id : undefined;
-  return huntHref(char.id, bossId);
+  return huntHref(char.id, preferredBoss?.id);
+}
+
+export function todayHuntHref(char: PracticeChar, boss: BossDef, state: AppState): string {
+  const target = isLiving(state, boss) ? boss : activeBoss(state);
+  return huntHref(char.id, target.id);
 }
 
 export function bossHuntHref(boss: BossDef, preferId?: string): string {
@@ -311,6 +318,13 @@ export function bossHuntHref(boss: BossDef, preferId?: string): string {
   const start =
     (preferId && ids.includes(preferId) ? preferId : ids[0]) ?? boss.characterIds[0];
   return huntHref(start, boss.id);
+}
+
+export function meterHuntHref(boss: BossDef, today?: TodayRound | null): string {
+  if (today?.bossId === boss.id && CHAR_BY_ID[today.charId]) {
+    return huntHref(today.charId, boss.id);
+  }
+  return bossHuntHref(boss);
 }
 
 export function roundHref(charId: string, from = "round"): string {

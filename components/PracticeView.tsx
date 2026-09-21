@@ -84,7 +84,7 @@ export function PracticeView({
 
   const goNext = () => {
     if (!nextId) {
-      router.push(from === "lessons" ? "/lessons" : "/");
+      router.push(backHref);
       return;
     }
     const q = encodeURIComponent(queue.join(","));
@@ -113,12 +113,15 @@ export function PracticeView({
 
   const adopt = () => {
     if (!score || score.empty || !inkUrl) return;
-    saveAlbumEntry({
-      charId: char.id,
-      score: score.overall,
-      image: inkUrl,
-      focus: char.focus,
-    });
+    saveAlbumEntry(
+      {
+        charId: char.id,
+        score: score.overall,
+        image: inkUrl,
+        focus: char.focus,
+      },
+      { keepAsToday: twoPhase },
+    );
     const hit = applyAdoptHit(char, score.overall, bossId);
     if (hunting) {
       setScore(null);
@@ -146,7 +149,7 @@ export function PracticeView({
         : "本番 ・ お手本なし"
       : queue.length > 1
         ? `${index + 1} / ${queue.length}`
-        : "練習";
+        : "本番";
 
   const railCurrent: PlayBeat | undefined = twoPhase
     ? score && leg === "honban"
