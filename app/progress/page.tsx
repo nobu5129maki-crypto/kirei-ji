@@ -1,5 +1,5 @@
-import { ProgressView } from "@/components/ProgressView";
+import { redirect } from "next/navigation";
 
 export default function ProgressPage() {
-  return <ProgressView />;
+  redirect("/album");
 }

@@ -2,39 +2,64 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CHAR_BY_ID } from "@/lib/characters";
-import { pickDaily, queueHref } from "@/lib/daily";
+import {
+  bossProgress,
+  ensureTodayRound,
+  pickWeeklyChar,
+  roundHref,
+  sceneHref,
+  SCENES,
+  weeklyHref,
+  type BossDef,
+} from "@/lib/game";
 import { LESSONS } from "@/lib/lessons";
-import { averageScore, loadState, type AppState } from "@/lib/storage";
+import {
+  COVER_SCORE,
+  loadState,
+  type AlbumEntry,
+  type AppState,
+  type TodayRound,
+} from "@/lib/storage";
 import { PwaInstall } from "./PwaInstall";
+import type { PracticeChar } from "@/lib/characters";
 
 function greeting(hour: number): string {
   if (hour < 11) return "おはようございます";
   if (hour < 18) return "こんにちは";
-  return "今日も、一文字だけ";
+  return "今日も、一枚だけ";
 }
 
 export function HomeView() {
   const [state, setState] = useState<AppState | null>(null);
-  const [daily, setDaily] = useState<string[]>([]);
   const [hour, setHour] = useState(12);
+  const [round, setRound] = useState<TodayRound | null>(null);
+  const [char, setChar] = useState<PracticeChar | null>(null);
+  const [boss, setBoss] = useState<BossDef | null>(null);
+  const [weekly, setWeekly] = useState<PracticeChar | null>(null);
 
   useEffect(() => {
+    const raw = loadState();
+    const ensured = ensureTodayRound(raw);
     setState(loadState());
-    setDaily(pickDaily(3));
+    setRound(ensured.round);
+    setChar(ensured.char);
+    setBoss(ensured.boss);
+    setWeekly(pickWeeklyChar());
     setHour(new Date().getHours());
   }, []);
 
-  if (!state) {
+  if (!state || !char || !boss || !round) {
     return <div className="flex-1 px-5 pt-16 text-ink-soft">紙を広げています…</div>;
   }
 
-  const avg = averageScore(state);
-  const dailyChars = daily.map((id) => CHAR_BY_ID[id]).filter(Boolean);
+  const adopted = round.adoptedEntryId
+    ? state.album.find((a) => a.id === round.adoptedEntryId)
+    : undefined;
+  const hp = bossProgress(state, boss.id);
   const lesson = LESSONS[0];
 
   return (
-    <div className="flex flex-1 flex-col px-5 pt-[max(1.4rem,env(safe-area-inset-top))]">
+    <div className="flex flex-1 flex-col px-5 pt-[max(1.4rem,env(safe-area-inset-top))] pb-6">
       <header className="pt-4">
         <p className="text-[11px] tracking-[0.18em] text-gold">字をきれいに</p>
         <h1 className="mt-2 font-serif text-[1.85rem] leading-snug">
@@ -47,8 +72,8 @@ export function HomeView() {
 
       <section className="mt-6 grid grid-cols-3 gap-2">
         <Stat label="連続" value={state.streak ? `${state.streak}日` : "—"} />
-        <Stat label="書いた字" value={state.totalWrites ? `${state.totalWrites}` : "0"} />
-        <Stat label="平均" value={avg !== null ? `${avg}` : "—"} />
+        <Stat label="見本帳" value={`${state.album.length}`} />
+        <Stat label="残した字" value={`${uniqueChars(state.album)}`} />
       </section>
 
       {!state.onboarded && (
@@ -62,38 +87,83 @@ export function HomeView() {
         </Link>
       )}
 
-      {state.diagnosis && (
-        <div className="mt-5 rounded-3xl border border-ink/8 bg-white/35 px-5 py-4">
-          <p className="text-[11px] tracking-[0.2em] text-vermillion">いまの癖</p>
-          <p className="mt-2 text-sm leading-relaxed">{state.diagnosis.note}</p>
+      <div className="mt-5 rounded-3xl border border-ink/8 bg-white/35 px-5 py-4">
+        <p className="text-[11px] tracking-[0.2em] text-vermillion">癖 ・ {boss.name}</p>
+        <p className="mt-2 text-sm leading-relaxed">{boss.hint}</p>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/10">
+          <div
+            className="h-full rounded-full bg-vermillion/80"
+            style={{ width: `${(hp.hp / hp.maxHp) * 100}%` }}
+          />
         </div>
+        <p className="mt-1.5 text-[11px] text-ink-soft">
+          {hp.defeatedAt ? "今日は、この癖を一回通しました。" : `残り ${hp.hp}`}
+        </p>
+      </div>
+
+      <section className="mt-6">
+        <p className="text-[11px] tracking-[0.22em] text-gold">きょうのラウンド</p>
+        {adopted ? (
+          <AdoptedCard entry={adopted} char={char} href={roundHref(char.id)} />
+        ) : (
+          <Link
+            href={roundHref(char.id)}
+            className="mt-3 block rounded-3xl border border-ink/8 bg-white/50 px-5 py-5"
+          >
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-sm text-ink-soft">今日の相手 ・ {boss.name}</p>
+                <p className="mt-1 font-serif text-4xl leading-none">{char.char}</p>
+                <p className="mt-2 text-sm text-ink-soft">
+                  1本目はお手本あり。2本目が本番です。
+                </p>
+              </div>
+              <span className="font-display text-6xl text-ink/85">{char.char}</span>
+            </div>
+            <p className="btn-ink mt-5">紙を開く</p>
+          </Link>
+        )}
+      </section>
+
+      {weekly && (
+        <section className="mt-6">
+          <div className="flex items-end justify-between">
+            <h2 className="font-serif text-xl">今週の一字</h2>
+            <span className="text-[11px] text-ink-soft">7日同じ字</span>
+          </div>
+          <Link
+            href={weeklyHref(weekly.id)}
+            className="mt-3 flex items-center gap-3 rounded-3xl bg-paper-deep/80 px-4 py-4"
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/70 font-display text-3xl">
+              {weekly.char}
+            </span>
+            <div className="flex-1">
+              <p className="text-sm">{weekly.reading}</p>
+              <p className="text-[12px] text-ink-soft">いちばんいい一枚が、今週の表紙。</p>
+            </div>
+            <span className="text-ink-soft">→</span>
+          </Link>
+        </section>
       )}
 
       <section className="mt-6">
-        <div className="flex items-end justify-between">
-          <h2 className="font-serif text-xl">きょうの3分</h2>
-          <span className="text-[11px] text-ink-soft">3文字</span>
-        </div>
-        <Link
-          href={dailyChars.length ? queueHref(dailyChars.map((c) => c.id)) : "/lessons"}
-          className="mt-3 flex items-center gap-3 rounded-3xl border border-ink/8 bg-white/50 px-4 py-4"
-        >
-          <div className="flex -space-x-2">
-            {dailyChars.map((c) => (
-              <span
-                key={c.id}
-                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-paper-deep font-display text-2xl ring-2 ring-paper"
+        <h2 className="font-serif text-xl">場面</h2>
+        <p className="mt-1 text-[12px] text-ink-soft">明日使う字の、下見。</p>
+        <ul className="mt-3 grid grid-cols-2 gap-2">
+          {SCENES.map((scene) => (
+            <li key={scene.id}>
+              <Link
+                href={sceneHref(scene)}
+                className="block rounded-2xl border border-ink/8 bg-white/40 px-3 py-3"
               >
-                {c.char}
-              </span>
-            ))}
-          </div>
-          <div className="flex-1">
-            <p className="text-sm">弱っている字と、基本の字</p>
-            <p className="text-[12px] text-ink-soft">なぞって、消して、見てみる</p>
-          </div>
-          <span className="text-ink-soft">→</span>
-        </Link>
+                <p className="text-[10px] tracking-widest text-gold">{scene.kicker}</p>
+                <p className="mt-1 font-serif text-lg">{scene.title}</p>
+                <p className="mt-1 text-[11px] text-ink-soft">{scene.minutes}分</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="mt-6">
@@ -119,6 +189,39 @@ export function HomeView() {
       </section>
 
       <PwaInstall />
+    </div>
+  );
+}
+
+function uniqueChars(album: AlbumEntry[]): number {
+  return new Set(album.map((a) => a.charId)).size;
+}
+
+function AdoptedCard({
+  entry,
+  char,
+  href,
+}: {
+  entry: AlbumEntry;
+  char: PracticeChar;
+  href: string;
+}) {
+  return (
+    <div className="mt-3 rounded-3xl border border-ink/8 bg-white/50 px-5 py-4">
+      <p className="text-sm text-ink-soft">今日の一枚 ・ {char.char}</p>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={entry.image}
+        alt={`${char.char}の、今日の一枚`}
+        className="mt-3 w-full rounded-2xl"
+      />
+      <p className="mt-2 text-sm">
+        整い度 {entry.score}
+        {entry.score >= COVER_SCORE ? " ・ 表紙候補" : " ・ 残しました"}
+      </p>
+      <Link href={href} className="btn-ghost mt-4 w-full">
+        もう一枚
+      </Link>
     </div>
   );
 }

@@ -6,15 +6,15 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/", label: "きょう", icon: SunIcon },
+  { href: "/album", label: "見本帳", icon: AlbumIcon },
   { href: "/lessons", label: "レッスン", icon: BookIcon },
-  { href: "/progress", label: "きろく", icon: ChartIcon },
   { href: "/tips", label: "こころえ", icon: LeafIcon },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {
@@ -22,7 +22,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       });
     }
   }, []);
-  const hideNav = pathname.startsWith("/practice") || pathname.startsWith("/diagnose");
+  // レイアウトは静的プリレンダされるため、パスに依存するナビはマウント後に出す
+  const hideNav =
+    !mounted ||
+    pathname.startsWith("/practice") ||
+    pathname.startsWith("/diagnose");
 
   return (
     <div className="min-h-dvh bg-desk">
@@ -35,10 +39,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <ul className="grid grid-cols-4 px-2 pt-1 pb-[max(0.4rem,env(safe-area-inset-bottom))]">
               {items.map((item) => {
                 const active =
-                  ready &&
-                  (item.href === "/"
+                  item.href === "/"
                     ? pathname === "/"
-                    : pathname.startsWith(item.href));
+                    : pathname.startsWith(item.href);
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>
@@ -89,13 +92,22 @@ function BookIcon({ active }: { active: boolean }) {
   );
 }
 
-function ChartIcon({ active }: { active: boolean }) {
+function AlbumIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M5 19V9.5M12 19V5M19 19v-6"
+      <rect
+        x="5"
+        y="4.5"
+        width="14"
+        height="15"
+        rx="1.6"
         stroke="currentColor"
         strokeWidth={active ? 1.8 : 1.4}
+      />
+      <path
+        d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4.5"
+        stroke="currentColor"
+        strokeWidth={active ? 1.7 : 1.3}
         strokeLinecap="round"
       />
     </svg>

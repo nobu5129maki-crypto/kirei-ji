@@ -1,0 +1,227 @@
+import {
+  CHARACTERS,
+  CHAR_BY_ID,
+  FOCUS_LABEL,
+  getChar,
+  practicePath,
+  type PracticeChar,
+  type StrokeFocus,
+} from "./characters";
+import {
+  hitBoss,
+  loadState,
+  setBosses,
+  setTodayRound,
+  todayStamp,
+  weakestIds,
+  type AppState,
+  type BossState,
+  type Diagnosis,
+  type TodayRound,
+} from "./storage";
+
+export type BossId = "small" | "large" | "left" | "tilt" | "harai";
+
+export type BossDef = {
+  id: BossId;
+  name: string;
+  hint: string;
+  focuses: StrokeFocus[];
+  characterIds: string[];
+  matches: (d?: Diagnosis) => boolean;
+};
+
+export const BOSSES: BossDef[] = [
+  {
+    id: "small",
+    name: "小さくなる",
+    hint: "余白を恐れず、マスの七〜八割へ。",
+    focuses: ["size", "center"],
+    characterIds: ["h-あ", "kj-ei", "kj-juu"],
+    matches: (d) => d?.size === "small",
+  },
+  {
+    id: "large",
+    name: "枠いっぱい",
+    hint: "周囲に一画分の余白を残す。",
+    focuses: ["size", "balance"],
+    characterIds: ["kj-kuni", "kj-sama", "h-あ"],
+    matches: (d) => d?.size === "large",
+  },
+  {
+    id: "left",
+    name: "左偏り",
+    hint: "十字の交点に、字の心臓を置く。",
+    focuses: ["center"],
+    characterIds: ["h-を", "kj-juu", "kj-kokoro"],
+    matches: (d) => d?.center === "left",
+  },
+  {
+    id: "tilt",
+    name: "傾き",
+    hint: "最初の一画を、水平か垂直に。",
+    focuses: ["line", "tome"],
+    characterIds: ["kj-ichi", "kj-tadashi", "k-ア"],
+    matches: (d) => Boolean(d && d.tilt !== "ok"),
+  },
+  {
+    id: "harai",
+    name: "はらい不足",
+    hint: "最後まで一気に。途中で細く切らない。",
+    focuses: ["harai", "hane"],
+    characterIds: ["h-い", "kj-ki", "kj-ei"],
+    matches: () => true,
+  },
+];
+
+export type Scene = {
+  id: string;
+  title: string;
+  kicker: string;
+  minutes: number;
+  characterIds: string[];
+};
+
+export const SCENES: Scene[] = [
+  {
+    id: "date",
+    title: "日付",
+    kicker: "毎日書く字",
+    minutes: 3,
+    characterIds: ["kj-nen", "kj-tsuki", "kj-hi"],
+  },
+  {
+    id: "sign",
+    title: "署名",
+    kicker: "書類の顔",
+    minutes: 4,
+    characterIds: ["kj-watashi", "kj-namae", "kj-sama"],
+  },
+  {
+    id: "memo",
+    title: "メモ",
+    kicker: "会議のあと",
+    minutes: 3,
+    characterIds: ["h-あ", "h-を", "kj-kokoro"],
+  },
+  {
+    id: "close",
+    title: "締めの一字",
+    kicker: "心・和",
+    minutes: 3,
+    characterIds: ["kj-kokoro", "kj-wa", "kj-omou"],
+  },
+];
+
+const FUNDAMENTALS = ["kj-ei", "h-あ", "kj-juu", "h-を", "kj-kokoro"];
+
+function daySeed(stamp: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < stamp.length; i++) {
+    h ^= stamp.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+export function isoWeek(d = new Date()): string {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((t.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${t.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+export function pickWeeklyChar(): PracticeChar {
+  const seed = daySeed(isoWeek());
+  return CHARACTERS[seed % CHARACTERS.length];
+}
+
+export function activeBoss(state: AppState): BossDef {
+  const living = BOSSES.filter((b) => !state.bosses[b.id]?.defeatedAt);
+  const matched = living.find((b) => b.id !== "harai" && b.matches(state.diagnosis));
+  return matched ?? living.find((b) => b.id === "harai") ?? BOSSES[BOSSES.length - 1];
+}
+
+export function ensureBosses(state: AppState): AppState {
+  const next = { ...state.bosses };
+  let changed = false;
+  for (const boss of BOSSES) {
+    if (next[boss.id]) continue;
+    if (boss.id === "harai" || boss.matches(state.diagnosis)) {
+      next[boss.id] = { hp: 100, maxHp: 100, defeatedAt: null };
+      changed = true;
+    }
+  }
+  if (!changed) return state;
+  return setBosses(next);
+}
+
+export function bossProgress(state: AppState, id: BossId): BossState {
+  return state.bosses[id] ?? { hp: 100, maxHp: 100, defeatedAt: null };
+}
+
+export function pickRoundChar(state: AppState, boss: BossDef): PracticeChar {
+  const weak = weakestIds(state, 6);
+  const fromBoss = boss.characterIds.find((id) => weak.includes(id) && CHAR_BY_ID[id]);
+  if (fromBoss) return CHAR_BY_ID[fromBoss];
+  const weakAny = weak.map((id) => CHAR_BY_ID[id]).find(Boolean);
+  if (weakAny) return weakAny;
+  const seed = daySeed(todayStamp());
+  const fromPool = boss.characterIds[seed % boss.characterIds.length];
+  return CHAR_BY_ID[fromPool] ?? CHAR_BY_ID[FUNDAMENTALS[seed % FUNDAMENTALS.length]] ?? CHARACTERS[0];
+}
+
+export function ensureTodayRound(state: AppState): { state: AppState; round: TodayRound; char: PracticeChar; boss: BossDef } {
+  const today = todayStamp();
+  let next = state;
+  if (Object.keys(state.bosses).length === 0 || state.diagnosis) {
+    next = ensureBosses(state);
+  }
+  const boss = activeBoss(next);
+  if (next.todayRound && next.todayRound.date === today) {
+    const char = getChar(next.todayRound.charId) ?? pickRoundChar(next, boss);
+    return { state: next, round: next.todayRound, char, boss };
+  }
+  const char = pickRoundChar(next, boss);
+  const round: TodayRound = {
+    date: today,
+    charId: char.id,
+    bossId: boss.id,
+  };
+  next = setTodayRound(round);
+  return { state: next, round, char, boss };
+}
+
+export function applyAdoptHit(char: PracticeChar, score: number, bossId: string): void {
+  if (score < 80) return;
+  const boss = BOSSES.find((b) => b.id === bossId);
+  if (!boss) return;
+  const related =
+    boss.focuses.includes(char.focus) || boss.characterIds.includes(char.id);
+  if (!related) return;
+  hitBoss(bossId, score >= 90 ? 34 : 25);
+}
+
+export function roundHref(charId: string, from = "round"): string {
+  return `${practicePath(charId)}?from=${encodeURIComponent(from)}`;
+}
+
+export function sceneHref(scene: Scene): string {
+  const q = encodeURIComponent(scene.characterIds.join(","));
+  return `${practicePath(scene.characterIds[0])}?queue=${q}&from=scenes`;
+}
+
+export function weeklyHref(charId: string): string {
+  return roundHref(charId, "weekly");
+}
+
+export function themeLabel(char: PracticeChar, boss: BossDef): string {
+  if (boss.focuses.includes(char.focus)) return boss.name;
+  return FOCUS_LABEL[char.focus];
+}
+
+export function isTwoPhase(from?: string): boolean {
+  return from === "round" || from === "boss" || from === "weekly";
+}

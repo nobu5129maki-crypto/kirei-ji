@@ -1,3 +1,5 @@
+import type { StrokeFocus } from "./characters";
+
 export type CharRecord = {
   count: number;
   best: number;
@@ -12,6 +14,28 @@ export type Diagnosis = {
   note: string;
 };
 
+export type AlbumEntry = {
+  id: string;
+  charId: string;
+  date: string;
+  score: number;
+  image: string;
+  focus: StrokeFocus;
+};
+
+export type BossState = {
+  hp: number;
+  maxHp: number;
+  defeatedAt: string | null;
+};
+
+export type TodayRound = {
+  date: string;
+  charId: string;
+  bossId: string;
+  adoptedEntryId?: string;
+};
+
 export type AppState = {
   onboarded: boolean;
   streak: number;
@@ -20,9 +44,13 @@ export type AppState = {
   diagnosis?: Diagnosis;
   totalWrites: number;
   practiceDays: string[];
+  album: AlbumEntry[];
+  bosses: Record<string, BossState>;
+  todayRound: TodayRound | null;
 };
 
 const KEY = "kirei-ji-v1";
+const ALBUM_MAX = 48;
 
 export const EMPTY_STATE: AppState = {
   onboarded: false,
@@ -31,6 +59,9 @@ export const EMPTY_STATE: AppState = {
   records: {},
   totalWrites: 0,
   practiceDays: [],
+  album: [],
+  bosses: {},
+  todayRound: null,
 };
 
 export function todayStamp(): string {
@@ -55,7 +86,14 @@ export function loadState(): AppState {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return EMPTY_STATE;
-    return { ...EMPTY_STATE, ...JSON.parse(raw) } as AppState;
+    const parsed = JSON.parse(raw) as Partial<AppState>;
+    return {
+      ...EMPTY_STATE,
+      ...parsed,
+      album: parsed.album ?? [],
+      bosses: parsed.bosses ?? {},
+      todayRound: parsed.todayRound ?? null,
+    };
   } catch {
     return EMPTY_STATE;
   }
@@ -133,3 +171,70 @@ export function averageScore(state: AppState): number | null {
   if (!vals.length) return null;
   return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
 }
+
+export function captureSheet(source: HTMLCanvasElement): string {
+  const out = 280;
+  const canvas = document.createElement("canvas");
+  canvas.width = out;
+  canvas.height = out;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+  ctx.fillStyle = "#FBF7F0";
+  ctx.fillRect(0, 0, out, out);
+  ctx.drawImage(source, 0, 0, out, out);
+  return canvas.toDataURL("image/jpeg", 0.72);
+}
+
+export function saveAlbumEntry(
+  entry: Omit<AlbumEntry, "id" | "date">,
+): AlbumEntry {
+  const today = todayStamp();
+  const saved: AlbumEntry = {
+    ...entry,
+    id: `${today}-${entry.charId}-${Date.now()}`,
+    date: today,
+  };
+  updateState((prev) => ({
+    ...prev,
+    album: [saved, ...prev.album].slice(0, ALBUM_MAX),
+    todayRound:
+      prev.todayRound &&
+      prev.todayRound.date === today &&
+      prev.todayRound.charId === entry.charId
+        ? { ...prev.todayRound, adoptedEntryId: saved.id }
+        : prev.todayRound,
+  }));
+  return saved;
+}
+
+export function setTodayRound(round: TodayRound): AppState {
+  return updateState((prev) => ({ ...prev, todayRound: round }));
+}
+
+export function setBosses(bosses: Record<string, BossState>): AppState {
+  return updateState((prev) => ({ ...prev, bosses }));
+}
+
+export function hitBoss(bossId: string, amount: number): AppState {
+  const today = todayStamp();
+  return updateState((prev) => {
+    const cur = prev.bosses[bossId];
+    if (!cur || cur.defeatedAt) return prev;
+    const hp = Math.max(0, cur.hp - amount);
+    return {
+      ...prev,
+      bosses: {
+        ...prev.bosses,
+        [bossId]: {
+          ...cur,
+          hp,
+          defeatedAt: hp <= 0 ? today : null,
+        },
+      },
+    };
+  });
+}
+
+export const ADOPT_SCORE = 78;
+export const COVER_SCORE = 90;
+export const BOSS_HIT_SCORE = 80;

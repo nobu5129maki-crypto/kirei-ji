@@ -64,10 +64,10 @@ export function DiagnoseView() {
           {diagnosis?.note}
         </p>
         <p className="mt-6 text-sm leading-relaxed">
-          これから毎日3分。弱っている字と、とめ・はね・はらいを戻していきます。責める必要はありません。
+          これから毎日、一文字。癖に名前をつけて、通った字だけ見本帳に残します。
         </p>
         <button type="button" className="btn-ink mt-8" onClick={() => router.push("/")}>
-          きょうの3分へ
+          紙を開く
         </button>
       </div>
     );

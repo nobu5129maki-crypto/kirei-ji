@@ -2,6 +2,7 @@
 
 import type { ScoreBreakdown } from "@/lib/scoring";
 import { FOCUS_LABEL, type PracticeChar } from "@/lib/characters";
+import { ADOPT_SCORE, COVER_SCORE } from "@/lib/storage";
 
 const axes: { key: keyof Pick<ScoreBreakdown, "size" | "tilt" | "center" | "shape">; label: string }[] = [
   { key: "size", label: "大きさ" },
@@ -16,21 +17,41 @@ export function ScoreSheet({
   onRetry,
   onNext,
   nextLabel,
+  phase = "free",
+  onAdopt,
 }: {
   char: PracticeChar;
   score: ScoreBreakdown;
   onRetry: () => void;
   onNext?: () => void;
   nextLabel?: string;
+  phase?: "free" | "warmup" | "honban";
+  onAdopt?: () => void;
 }) {
+  const passed = !score.empty && score.overall >= ADOPT_SCORE;
+  const cover = !score.empty && score.overall >= COVER_SCORE;
+  const verdict = score.empty
+    ? "書けたら、見てみるを押してください。"
+    : phase === "warmup"
+      ? "終わり方だけ残して、本番へ。"
+      : cover
+        ? "見本帳の表紙候補です。残しましょう。"
+        : passed
+          ? "通った。仕事で使ってよい字です。"
+          : "もう一枚。終わり方だけ意識して。";
+
   return (
     <div className="flex flex-col gap-5">
       <div className="text-center">
-        <p className="text-[11px] tracking-[0.25em] text-gold">整い度</p>
-        <p className="mt-1 font-serif text-6xl font-medium text-ink">
+        <p className="text-[11px] tracking-[0.25em] text-gold">
+          {phase === "warmup" ? "1本目" : phase === "honban" ? "本番" : "整い度"}
+        </p>
+        <p className="mt-1 font-serif text-5xl font-medium text-ink">
           {score.empty ? "—" : score.overall}
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-ink-soft">{score.praise}</p>
+        <p className="mt-2 text-sm leading-relaxed text-ink">
+          {phase === "free" ? score.praise : verdict}
+        </p>
       </div>
 
       {!score.empty && (
@@ -86,16 +107,37 @@ export function ScoreSheet({
         </ul>
       </div>
 
-      <div className="flex gap-2">
-        <button type="button" onClick={onRetry} className="btn-ghost flex-1">
-          もう一度
+      {phase === "warmup" && onNext && (
+        <button type="button" onClick={onNext} className="btn-ink w-full">
+          本番へ
         </button>
-        {onNext && (
-          <button type="button" onClick={onNext} className="btn-ink flex-1">
-            {nextLabel ?? "つぎへ"}
+      )}
+
+      {phase === "honban" && (
+        <div className="flex gap-2">
+          <button type="button" onClick={onRetry} className="btn-ghost flex-1">
+            もう一枚
           </button>
-        )}
-      </div>
+          {onAdopt && !score.empty && (
+            <button type="button" onClick={onAdopt} className="btn-ink flex-1">
+              {passed ? "残す" : "それでも残す"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {phase === "free" && (
+        <div className="flex gap-2">
+          <button type="button" onClick={onRetry} className="btn-ghost flex-1">
+            もう一枚
+          </button>
+          {onNext && (
+            <button type="button" onClick={onNext} className="btn-ink flex-1">
+              {nextLabel ?? "つぎへ"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
