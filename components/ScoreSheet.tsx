@@ -59,6 +59,26 @@ export function ScoreSheet({
         <p className="text-[11px] tracking-widest text-vermillion">
           きょうの一点 ・ {FOCUS_LABEL[char.focus]}
         </p>
+        {score.correctionUrl && !score.empty && (
+          <figure className="mt-3 overflow-hidden rounded-2xl border border-vermillion/35 bg-[#FBF7F0]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={score.correctionUrl}
+              alt={`${char.char}の、赤い添削`}
+              className="w-full"
+            />
+            <figcaption className="px-3 py-2 text-[12px] leading-relaxed text-ink">
+              書いた字の上に、赤い直しかたを重ねています。
+              {char.focus === "harai"
+                ? " はらいは、赤い先まで一気に。"
+                : char.focus === "hane"
+                  ? " はねは、赤い先だけ小さく。"
+                  : char.focus === "tome"
+                    ? " とめは、赤い位置で止めてから離す。"
+                    : " 赤い線が、戻したい形です。"}
+            </figcaption>
+          </figure>
+        )}
         <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-ink">
           {score.comments.map((c) => (
             <li key={c}>・{c}</li>

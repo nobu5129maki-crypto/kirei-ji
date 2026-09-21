@@ -9,13 +9,6 @@ export function TipsView() {
       <p className="mt-2 text-sm leading-relaxed text-ink-soft">
         短く、実地の話だけ。読んで、すぐ一文字書いてください。
       </p>
-      <Link
-        href="/practice/kj-ei?from=tips"
-        className="btn-ink mt-5 flex w-full items-center justify-center gap-3"
-      >
-        <span className="font-display text-2xl leading-none">永</span>
-        <span>を書いてみる</span>
-      </Link>
       <ul className="mt-6 space-y-3">
         {TIPS.map((tip) => (
           <li key={tip.id}>

@@ -1,4 +1,5 @@
 import type { PracticeChar, StrokeFocus } from "./characters";
+import { loadStrokes } from "./kanjivg";
 
 export type ScoreBreakdown = {
   overall: number;
@@ -9,6 +10,8 @@ export type ScoreBreakdown = {
   comments: string[];
   praise: string;
   empty: boolean;
+  /** 書いた字の上に、赤いお手本を重ねた添削画像 */
+  correctionUrl?: string;
 };
 
 const SIZE = 160;
@@ -239,6 +242,174 @@ function commentFor(
   return comments.slice(0, 4);
 }
 
+function drawCorrectionGrid(ctx: CanvasRenderingContext2D, size: number) {
+  ctx.save();
+  ctx.strokeStyle = "#C9BBA8";
+  ctx.lineWidth = 1.4;
+  ctx.strokeRect(size * 0.035, size * 0.035, size * 0.93, size * 0.93);
+  ctx.strokeStyle = "#D8CCBA";
+  ctx.lineWidth = 0.9;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(size / 2, size * 0.035);
+  ctx.lineTo(size / 2, size * 0.965);
+  ctx.moveTo(size * 0.035, size / 2);
+  ctx.lineTo(size * 0.965, size / 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function parseViewBox(viewBox: string): { w: number; h: number } {
+  const parts = viewBox.trim().split(/[\s,]+/).map(Number);
+  return { w: parts[2] || 109, h: parts[3] || 109 };
+}
+
+function pathEndPoint(d: string): { x: number; y: number } | null {
+  const nums = [...d.matchAll(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi)].map((m) => Number(m[0]));
+  if (nums.length < 2) return null;
+  return { x: nums[nums.length - 2], y: nums[nums.length - 1] };
+}
+
+function drawModelGlyph(
+  ctx: CanvasRenderingContext2D,
+  char: string,
+  fontFamily: string,
+  size: number,
+  color: string,
+) {
+  ctx.fillStyle = color;
+  ctx.font = `600 ${Math.round(size * 0.72)}px ${fontFamily}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(char, size / 2, size / 2 + size * 0.02);
+}
+
+function drawModelStrokes(
+  ctx: CanvasRenderingContext2D,
+  paths: string[],
+  viewBox: string,
+  size: number,
+  color: string,
+  width: number,
+) {
+  const { w, h } = parseViewBox(viewBox);
+  const scale = size / Math.max(w, h);
+  ctx.save();
+  ctx.scale(scale, scale);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width / scale;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.fillStyle = "transparent";
+  for (const d of paths) {
+    ctx.stroke(new Path2D(d));
+  }
+  ctx.restore();
+}
+
+function drawHaraiMarks(
+  ctx: CanvasRenderingContext2D,
+  paths: string[],
+  viewBox: string,
+  size: number,
+) {
+  const { w, h } = parseViewBox(viewBox);
+  const scale = size / Math.max(w, h);
+  ctx.save();
+  ctx.fillStyle = "#C45C4A";
+  ctx.strokeStyle = "#C45C4A";
+  for (const d of paths) {
+    const end = pathEndPoint(d);
+    if (!end) continue;
+    const x = end.x * scale;
+    const y = end.y * scale;
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.028, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function punchUserInk(
+  ctx: CanvasRenderingContext2D,
+  user: HTMLCanvasElement,
+  size: number,
+) {
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.filter = "blur(3.2px)";
+  ctx.drawImage(user, 0, 0, size, size);
+  ctx.filter = "none";
+  ctx.globalAlpha = 0.92;
+  ctx.drawImage(user, 0, 0, size, size);
+  ctx.restore();
+}
+
+/** 黒＝いまの字、赤＝足りないところ・直したい終わり方 */
+async function renderCorrectionPreview(
+  userCanvas: HTMLCanvasElement,
+  char: PracticeChar,
+  fontFamily: string,
+): Promise<string> {
+  const out = 420;
+  const canvas = document.createElement("canvas");
+  canvas.width = out;
+  canvas.height = out;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+
+  ctx.fillStyle = "#FBF7F0";
+  ctx.fillRect(0, 0, out, out);
+  drawCorrectionGrid(ctx, out);
+
+  ctx.save();
+  ctx.globalAlpha = 0.95;
+  ctx.drawImage(userCanvas, 0, 0, out, out);
+  ctx.restore();
+
+  const strokes = await loadStrokes(char.char);
+  const model = document.createElement("canvas");
+  model.width = out;
+  model.height = out;
+  const mctx = model.getContext("2d");
+  if (!mctx) return canvas.toDataURL("image/png");
+
+  if (strokes?.paths.length) {
+    drawModelStrokes(mctx, strokes.paths, strokes.viewBox, out, "#C45C4A", 7.2);
+  } else {
+    drawModelGlyph(mctx, char.char, fontFamily, out, "#C45C4A");
+  }
+
+  const miss = document.createElement("canvas");
+  miss.width = out;
+  miss.height = out;
+  const xctx = miss.getContext("2d");
+  if (xctx) {
+    xctx.drawImage(model, 0, 0);
+    punchUserInk(xctx, userCanvas, out);
+    ctx.save();
+    ctx.globalAlpha = 0.94;
+    ctx.drawImage(miss, 0, 0);
+    ctx.restore();
+
+    if (strokes?.paths.length && (char.focus === "harai" || char.focus === "hane" || char.focus === "tome")) {
+      const tips = document.createElement("canvas");
+      tips.width = out;
+      tips.height = out;
+      const tctx = tips.getContext("2d");
+      if (tctx) {
+        const tipPaths =
+          char.focus === "harai" ? strokes.paths.slice(-2) : strokes.paths.slice(-1);
+        drawHaraiMarks(tctx, tipPaths, strokes.viewBox, out);
+        punchUserInk(tctx, userCanvas, out);
+        ctx.drawImage(tips, 0, 0);
+      }
+    }
+  }
+
+  return canvas.toDataURL("image/png");
+}
+
 function praiseFor(overall: number, shape: number): string {
   if (overall >= 90 && shape >= 82) return "骨格が整っています。この形を、体に残しましょう。";
   if (overall >= 82) return "よく整いました。もう一度、同じ大きさで書いて定着を。";
@@ -312,6 +483,7 @@ export async function scoreHandwriting(
     comments: commentFor(char, sizeScore, tiltScore, centerScore, shapeScore, user),
     praise: praiseFor(overall, shapeScore),
     empty: false,
+    correctionUrl: await renderCorrectionPreview(userCanvas, char, fontFamily),
   };
 }
 

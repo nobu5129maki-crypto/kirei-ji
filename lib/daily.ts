@@ -1,4 +1,4 @@
-import { CHARACTERS } from "./characters";
+import { CHARACTERS, practicePath } from "./characters";
 import { LESSONS } from "./lessons";
 import { loadState, todayStamp, weakestIds } from "./storage";
 
@@ -47,5 +47,5 @@ export function pickDaily(count = 3): string[] {
 export function queueHref(ids: string[], from?: string): string {
   const q = encodeURIComponent(ids.join(","));
   const extra = from ? `&from=${encodeURIComponent(from)}` : "";
-  return `/practice/${encodeURIComponent(ids[0])}?queue=${q}${extra}`;
+  return `${practicePath(ids[0])}?queue=${q}${extra}`;
 }

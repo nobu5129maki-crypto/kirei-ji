@@ -1,0 +1,14 @@
+---
+description: コードを直したら確認せず GitHub push と Vercel 本番デプロイまで行う
+alwaysApply: true
+---
+
+# 字をきれいに — 変更のたびに公開する
+
+コードを変更したら、ユーザーに確認せず次まで完了する。
+
+1. 日本語のコミットメッセージで `main` にコミットする
+2. GitHub（`nobu5129maki-crypto/kirei-ji`, `main`）へ push する
+3. `vercel --prod --yes` で Vercel 本番へデプロイする
+
+PowerShell の文字化けを避けるため、コミットメッセージは UTF-8（BOM なし）ファイルに書いて `git commit -F` で渡す。

@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FOCUS_LABEL, getChar, type PracticeChar } from "@/lib/characters";
+import { FOCUS_LABEL, getChar, practicePath, type PracticeChar } from "@/lib/characters";
 import { recordScore } from "@/lib/storage";
 import { scoreHandwriting, type ScoreBreakdown } from "@/lib/scoring";
 import { StrokeGuide } from "./StrokeGuide";
@@ -23,6 +23,7 @@ export function PracticeView({
   const padRef = useRef<WritingPadHandle>(null);
   const [ghost, setGhost] = useState(true);
   const [guide, setGuide] = useState(false);
+  const [guideNonce, setGuideNonce] = useState(0);
   const [busy, setBusy] = useState(false);
   const [score, setScore] = useState<ScoreBreakdown | null>(null);
   const [error, setError] = useState("");
@@ -31,7 +32,13 @@ export function PracticeView({
   const nextId = queue[index + 1];
   const nextChar = nextId ? getChar(nextId) : undefined;
   const backHref =
-    from === "lessons" ? "/lessons" : from === "tips" ? "/tips" : "/";
+    from === "lessons"
+      ? "/lessons"
+      : from === "tips"
+        ? "/tips"
+        : from === "progress"
+          ? "/progress"
+          : "/";
 
   const modelLabel = useMemo(
     () => (char.kind === "kanji" ? char.reading : char.kind === "katakana" ? "カタカナ" : "ひらがな"),
@@ -57,14 +64,12 @@ export function PracticeView({
 
   const goNext = () => {
     if (!nextId) {
-      router.push(
-        from === "lessons" ? "/lessons" : from === "tips" ? "/tips" : "/progress",
-      );
+      router.push(from === "lessons" ? "/lessons" : "/progress");
       return;
     }
     const q = encodeURIComponent(queue.join(","));
     const extra = from ? `&from=${encodeURIComponent(from)}` : "";
-    router.push(`/practice/${encodeURIComponent(nextId)}?queue=${q}${extra}`);
+    router.push(`${practicePath(nextId)}?queue=${q}${extra}`);
   };
 
   const retry = () => {
@@ -109,22 +114,33 @@ export function PracticeView({
         </div>
       ) : (
         <>
-          <div className="mt-4 overflow-hidden rounded-[22px] border border-ink/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
-            {guide ? (
-              <StrokeGuide char={char.char} playing />
-            ) : (
-              <WritingPad ref={padRef} ghost={char.char} showGhost={ghost} />
+          <div className="relative mt-4 overflow-hidden rounded-[22px] border border-ink/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+            <WritingPad ref={padRef} ghost={char.char} showGhost={ghost && !guide} />
+            {guide && (
+              <div className="pointer-events-none absolute inset-0 z-10">
+                <StrokeGuide
+                  key={guideNonce}
+                  char={char.char}
+                  playing
+                  overlay
+                  onComplete={() => setGuide(false)}
+                />
+                <p className="absolute right-0 bottom-2 left-0 text-center text-[12px] text-vermillion">
+                  そのままで書けます
+                </p>
+              </div>
             )}
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <Toggle pressed={ghost} onClick={() => setGhost((v) => !v)} disabled={guide}>
+            <Toggle pressed={ghost} onClick={() => setGhost((v) => !v)}>
               お手本を重ねる
             </Toggle>
             <Toggle
               pressed={guide}
               onClick={() => {
-                setGuide((v) => !v);
+                setGuide(true);
+                setGuideNonce((n) => n + 1);
               }}
             >
               筆順
@@ -138,7 +154,6 @@ export function PracticeView({
               type="button"
               className="btn-ghost"
               onClick={() => padRef.current?.undo()}
-              disabled={guide}
             >
               もどす
             </button>
@@ -146,7 +161,6 @@ export function PracticeView({
               type="button"
               className="btn-ghost"
               onClick={() => padRef.current?.clear()}
-              disabled={guide}
             >
               消す
             </button>
@@ -154,7 +168,7 @@ export function PracticeView({
               type="button"
               className="btn-ink flex-1"
               onClick={onJudge}
-              disabled={busy || guide}
+              disabled={busy}
             >
               {busy ? "見ています…" : "見てみる"}
             </button>

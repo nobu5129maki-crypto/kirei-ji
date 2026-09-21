@@ -584,8 +584,51 @@ export const CHAR_BY_ID: Record<string, PracticeChar> = Object.fromEntries(
   CHARACTERS.map((c) => [c.id, c]),
 );
 
+/** URL 用。日本語 ID は Windows / Next で 404 になるため ASCII にする */
+export function charSlug(char: PracticeChar): string {
+  if (/^[\x00-\x7F]+$/.test(char.id)) return char.id;
+  const prefix = char.kind === "katakana" ? "kata" : "hira";
+  return `${prefix}-${(char.char.codePointAt(0) ?? 0).toString(16)}`;
+}
+
+export const CHAR_BY_SLUG: Record<string, PracticeChar> = Object.fromEntries(
+  CHARACTERS.map((c) => [charSlug(c), c]),
+);
+
+/** `/practice/[id]` の日本語 ID がエンコードされて届いても照合できるようにする */
+export function normalizeCharId(raw: string): string {
+  let id = raw.trim();
+  for (let i = 0; i < 3; i++) {
+    try {
+      const next = decodeURIComponent(id);
+      if (next === id) break;
+      id = next;
+    } catch {
+      break;
+    }
+  }
+  return id;
+}
+
 export function getChar(id: string): PracticeChar | undefined {
-  return CHAR_BY_ID[id];
+  const normalized = normalizeCharId(id);
+  return (
+    CHAR_BY_ID[normalized] ||
+    CHAR_BY_SLUG[normalized] ||
+    CHAR_BY_ID[id] ||
+    CHAR_BY_SLUG[id] ||
+    CHARACTERS.find(
+      (c) =>
+        c.id === normalized ||
+        c.char === normalized ||
+        charSlug(c) === normalized,
+    )
+  );
+}
+
+export function practicePath(id: string): string {
+  const c = getChar(id);
+  return `/practice/${c ? charSlug(c) : encodeURIComponent(id)}`;
 }
 
 export function charsByKind(kind: CharKind): PracticeChar[] {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CHAR_BY_ID } from "@/lib/characters";
+import { CHAR_BY_ID, practicePath } from "@/lib/characters";
 import { queueHref } from "@/lib/daily";
 import {
   averageScore,
@@ -69,7 +69,7 @@ export function ProgressView() {
           <div className="flex items-end justify-between">
             <h2 className="font-serif text-xl">いま弱い字</h2>
             <Link
-              href={queueHref(weak.map((w) => w.id))}
+              href={queueHref(weak.map((w) => w.id), "progress")}
               className="text-sm text-ink-soft"
             >
               練習する →
@@ -79,7 +79,7 @@ export function ProgressView() {
             {weak.map((w) => (
               <li key={w.id}>
                 <Link
-                  href={`/practice/${w.id}`}
+                  href={`${practicePath(w.id)}?from=progress`}
                   className="flex items-center gap-3 rounded-2xl bg-white/40 px-3 py-2"
                 >
                   <span className="font-display text-3xl">{w.char.char}</span>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { lessonChars, type Lesson } from "@/lib/lessons";
 import { queueHref } from "@/lib/daily";
+import { practicePath } from "@/lib/characters";
 
 export function LessonDetail({ lesson }: { lesson: Lesson }) {
   const chars = lessonChars(lesson);
@@ -30,7 +31,7 @@ export function LessonDetail({ lesson }: { lesson: Lesson }) {
         {chars.map((c) => (
           <li key={c.id}>
             <Link
-              href={`/practice/${c.id}?from=lessons`}
+              href={`${practicePath(c.id)}?from=lessons`}
               className="flex items-center gap-3 px-4 py-3"
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-paper-deep font-display text-3xl">

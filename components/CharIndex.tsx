@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CHARACTERS, type CharKind } from "@/lib/characters";
+import { CHARACTERS, practicePath, type CharKind } from "@/lib/characters";
 
 const groups: { kind: CharKind; title: string; note: string }[] = [
   { kind: "hiragana", title: "ひらがな", note: "曲線と、終わり方" },
@@ -28,7 +28,7 @@ export function CharIndex() {
               {chars.map((c) => (
                 <Link
                   key={c.id}
-                  href={`/practice/${encodeURIComponent(c.id)}`}
+                  href={practicePath(c.id)}
                   className="flex aspect-square items-center justify-center rounded-2xl bg-white/50 font-display text-2xl"
                 >
                   {c.char}
