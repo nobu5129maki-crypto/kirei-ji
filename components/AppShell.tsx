@@ -15,6 +15,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        /* 無視 */
+      });
+    }
+  }, []);
   const hideNav = pathname.startsWith("/practice") || pathname.startsWith("/diagnose");
 
   return (

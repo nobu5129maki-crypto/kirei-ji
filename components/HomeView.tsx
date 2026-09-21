@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { CHAR_BY_ID } from "@/lib/characters";
 import { pickDaily, queueHref } from "@/lib/daily";
 import { LESSONS } from "@/lib/lessons";
-import { averageScore, loadState, type AppState } from "@/lib/storage";
+import { PwaInstall } from "./PwaInstall";
 
 function greeting(hour: number): string {
   if (hour < 11) return "おはようございます";
@@ -116,6 +116,8 @@ export function HomeView() {
           </Link>
         </div>
       </section>
+
+      <PwaInstall />
     </div>
   );
 }
