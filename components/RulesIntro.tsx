@@ -59,7 +59,7 @@ export function RulesIntro({
         </div>
 
         <p className="mt-7 text-sm leading-relaxed text-ink-soft">
-          今日の一枚は区切りです。癖のパーセントは、整った字を残すたびに下がります。一日一回ではありません。気が済むまで削ってください。
+          今日の一枚は区切りです。癖は気が済むまで。学年の漢字は、ことばにして書きながら覚えます。
         </p>
 
         <div className="mt-auto pt-8">

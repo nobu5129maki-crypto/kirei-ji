@@ -14,6 +14,7 @@ import {
   type BossDef,
 } from "@/lib/game";
 import { LESSONS } from "@/lib/lessons";
+import { pickTodaySchoolPack, schoolHref } from "@/lib/school";
 import {
   COVER_SCORE,
   loadRulesSeen,
@@ -41,6 +42,7 @@ export function HomeView() {
   const [char, setChar] = useState<PracticeChar | null>(null);
   const [boss, setBoss] = useState<BossDef | null>(null);
   const [weekly, setWeekly] = useState<PracticeChar | null>(null);
+  const [schoolPack, setSchoolPack] = useState<ReturnType<typeof pickTodaySchoolPack> | null>(null);
   const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
@@ -51,6 +53,7 @@ export function HomeView() {
     setChar(ensured.char);
     setBoss(ensured.boss);
     setWeekly(pickWeeklyChar());
+    setSchoolPack(pickTodaySchoolPack(loadState()));
     setHour(new Date().getHours());
     setShowRules(!loadRulesSeen());
   }, []);
@@ -175,6 +178,30 @@ export function HomeView() {
               <p className="text-[12px] text-ink-soft">いちばんいい一枚が、今週の表紙。</p>
             </div>
             <span className="text-ink-soft">→</span>
+          </Link>
+        </section>
+      )}
+
+      {schoolPack && (
+        <section className="mt-6">
+          <div className="flex items-end justify-between">
+            <h2 className="font-serif text-xl">書きながら覚える</h2>
+            <Link href="/school" className="text-[11px] text-ink-soft">
+              学年の地図 →
+            </Link>
+          </div>
+          <Link
+            href={schoolHref(schoolPack.pack)}
+            className="mt-3 block rounded-3xl border border-ink/8 bg-white/50 px-5 py-4"
+          >
+            <p className="text-[11px] tracking-[0.18em] text-gold">
+              {schoolPack.grade.name} ・ {schoolPack.pack.title}
+            </p>
+            <p className="mt-2 font-display text-3xl tracking-[0.12em]">
+              {schoolPack.pack.glyphs.join(" ")}
+            </p>
+            <p className="mt-2 text-sm text-ink-soft">{schoolPack.pack.line}</p>
+            <p className="btn-ink mt-4">この組を、書く</p>
           </Link>
         </section>
       )}

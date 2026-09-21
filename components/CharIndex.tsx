@@ -15,8 +15,15 @@ export function CharIndex() {
       <p className="pt-4 text-[11px] tracking-[0.28em] text-gold">字を選ぶ</p>
       <h1 className="mt-2 font-serif text-3xl">いつも崩れる、あの字</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        レッスンの途中でも、気になる一文字からで構いません。
+        レッスンの途中でも、気になる一文字からで構いません。学年の漢字は地図から。
       </p>
+      <Link
+        href="/school"
+        className="mt-4 block rounded-3xl border border-ink/8 bg-white/45 px-4 py-3"
+      >
+        <p className="text-[11px] tracking-[0.18em] text-gold">常用漢字 2136</p>
+        <p className="mt-1 font-serif text-lg">学年の地図を開く</p>
+      </Link>
 
       {groups.map((g) => {
         const chars = CHARACTERS.filter((c) => c.kind === g.kind);

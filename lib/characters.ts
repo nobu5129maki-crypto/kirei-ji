@@ -1,3 +1,5 @@
+import { SCHOOL_BY_CHAR, rawSchoolId } from "./school-rows";
+
 export type CharKind = "hiragana" | "katakana" | "kanji" | "form";
 
 export type StrokeFocus =
@@ -595,6 +597,39 @@ export const CHAR_BY_SLUG: Record<string, PracticeChar> = Object.fromEntries(
   CHARACTERS.map((c) => [charSlug(c), c]),
 );
 
+const KANJI_BY_GLYPH: Record<string, PracticeChar> = Object.fromEntries(
+  CHARACTERS.filter((c) => c.kind === "kanji").map((c) => [c.char, c]),
+);
+
+function lookupSchoolChar(id: string): PracticeChar | undefined {
+  let glyph = id;
+  if (id.startsWith("sk-")) {
+    const cp = Number.parseInt(id.slice(3), 16);
+    if (!Number.isFinite(cp)) return undefined;
+    glyph = String.fromCodePoint(cp);
+  } else if ([...id].length !== 1) {
+    return undefined;
+  }
+  const existing = KANJI_BY_GLYPH[glyph];
+  if (existing) return existing;
+  const row = SCHOOL_BY_CHAR[glyph];
+  if (!row) return undefined;
+  const grade = row.year === 8 ? "中学" : `小学${row.year}年`;
+  return {
+    id: rawSchoolId(row.char),
+    char: row.char,
+    reading: row.reading,
+    kind: "kanji",
+    strokeCount: row.strokeCount,
+    focus: row.strokeCount <= 1 ? "line" : row.strokeCount <= 7 ? "balance" : "center",
+    tips: [
+      `${grade}で習う字。マスの七〜八割、十字の交点に心臓を。`,
+      `読みは「${row.reading}」。細部より、外の形を先に。`,
+    ],
+    mistakes: ["小さくなる", "中心が寄る"],
+  };
+}
+
 /** `/practice/[id]` の日本語 ID がエンコードされて届いても照合できるようにする */
 export function normalizeCharId(raw: string): string {
   let id = raw.trim();
@@ -622,7 +657,8 @@ export function getChar(id: string): PracticeChar | undefined {
         c.id === normalized ||
         c.char === normalized ||
         charSlug(c) === normalized,
-    )
+    ) ||
+    lookupSchoolChar(normalized)
   );
 }
 

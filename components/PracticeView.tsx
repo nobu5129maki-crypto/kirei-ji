@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FOCUS_LABEL, getChar, practicePath, type PracticeChar } from "@/lib/characters";
 import { applyAdoptHit, isBossHunt, isTwoPhase, resolveHitBoss } from "@/lib/game";
+import { getPack } from "@/lib/school";
 import {
   captureSheet,
   recordScore,
@@ -21,20 +22,26 @@ export function PracticeView({
   queue,
   from,
   bossId,
+  grade,
+  packId,
 }: {
   char: PracticeChar;
   queue: string[];
   from?: string;
   bossId?: string;
+  grade?: string;
+  packId?: string;
 }) {
   const router = useRouter();
   const padRef = useRef<WritingPadHandle>(null);
   const twoPhase = isTwoPhase(from);
   const hunting = isBossHunt(from);
   const isScene = from === "scenes";
+  const isSchool = from === "school" || from === "school-dict";
+  const dictation = from === "school-dict";
   const canKeep = hunting || isScene || queue.length <= 1;
   const [leg, setLeg] = useState<"warmup" | "honban">(twoPhase ? "warmup" : "honban");
-  const [ghost, setGhost] = useState(true);
+  const [ghost, setGhost] = useState(!dictation);
   const [guide, setGuide] = useState(false);
   const [guideNonce, setGuideNonce] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -55,11 +62,18 @@ export function PracticeView({
           ? "/chars"
           : from === "progress" || from === "album"
             ? "/album"
-            : "/";
+            : isSchool
+              ? grade
+                ? `/school/${grade}`
+                : "/school"
+              : "/";
 
+  const pack = packId ? getPack(packId) : undefined;
   const modelLabel = useMemo(
-    () => (char.kind === "kanji" ? char.reading : char.kind === "katakana" ? "カタカナ" : "ひらがな"),
-    [char],
+    () =>
+      pack?.title ??
+      (char.kind === "kanji" ? char.reading : char.kind === "katakana" ? "カタカナ" : "ひらがな"),
+    [char, pack?.title],
   );
 
   const sheetPhase = twoPhase ? leg : canKeep ? "honban" : "free";
@@ -91,6 +105,8 @@ export function PracticeView({
     const extra = [
       from ? `from=${encodeURIComponent(from)}` : "",
       bossId ? `boss=${encodeURIComponent(bossId)}` : "",
+      grade ? `grade=${encodeURIComponent(grade)}` : "",
+      packId ? `pack=${encodeURIComponent(packId)}` : "",
     ]
       .filter(Boolean)
       .join("&");
@@ -143,13 +159,17 @@ export function PracticeView({
 
   const stepLabel = hunting
     ? "癖を削る"
-    : twoPhase
-      ? leg === "warmup"
-        ? "1本目 ・ お手本あり"
-        : "本番 ・ お手本なし"
-      : queue.length > 1
-        ? `${index + 1} / ${queue.length}`
-        : "本番";
+    : dictation
+      ? queue.length > 1
+        ? `書き取り ${index + 1} / ${queue.length}`
+        : "書き取り"
+      : twoPhase
+        ? leg === "warmup"
+          ? "1本目 ・ お手本あり"
+          : "本番 ・ お手本なし"
+        : queue.length > 1
+          ? `${index + 1} / ${queue.length}`
+          : "本番";
 
   const railCurrent: PlayBeat | undefined = twoPhase
     ? score && leg === "honban"
@@ -187,7 +207,9 @@ export function PracticeView({
       <p className="mt-3 text-sm leading-relaxed text-ink-soft">
         {cutNote
           ? cutNote
-          : hunting
+          : dictation
+            ? "お手本は消しています。読みと、さっきの手だけ残して。"
+            : hunting
             ? "お手本を見て整えてよい。80以上で残すと、癖のパーセントが下がります。"
             : twoPhase && leg === "honban"
               ? "見ないで書く。さっきの終わり方だけ残して。"

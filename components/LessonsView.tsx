@@ -25,6 +25,17 @@ export function LessonsView() {
         上からでなくて構いません。いま気になるところから。
       </p>
 
+      <Link
+        href="/school"
+        className="mt-5 block rounded-3xl border border-ink/8 bg-white/50 px-5 py-4"
+      >
+        <p className="text-[11px] tracking-[0.2em] text-gold">書きながら覚える</p>
+        <p className="mt-1 font-serif text-xl">学年の地図</p>
+        <p className="mt-1 text-sm text-ink-soft">
+          小1から高校まで、常用漢字2136字。ことばと罠で出題します。
+        </p>
+      </Link>
+
       <ul className="mt-6 space-y-3">
         {LESSONS.map((lesson, i) => {
           const chars = lessonChars(lesson);
