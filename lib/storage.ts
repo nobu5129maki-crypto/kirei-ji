@@ -238,3 +238,19 @@ export function hitBoss(bossId: string, amount: number): AppState {
 export const ADOPT_SCORE = 78;
 export const COVER_SCORE = 90;
 export const BOSS_HIT_SCORE = 80;
+
+const RULES_KEY = "kirei-ji-rules-v1";
+
+export function loadRulesSeen(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return localStorage.getItem(RULES_KEY) === "1";
+  } catch {
+    return true;
+  }
+}
+
+export function markRulesSeen(): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(RULES_KEY, "1");
+}

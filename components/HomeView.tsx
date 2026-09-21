@@ -15,12 +15,15 @@ import {
 import { LESSONS } from "@/lib/lessons";
 import {
   COVER_SCORE,
+  loadRulesSeen,
   loadState,
   type AlbumEntry,
   type AppState,
   type TodayRound,
 } from "@/lib/storage";
+import { PlaySteps } from "./PlaySteps";
 import { PwaInstall } from "./PwaInstall";
+import { RulesIntro } from "./RulesIntro";
 import type { PracticeChar } from "@/lib/characters";
 
 function greeting(hour: number): string {
@@ -36,6 +39,7 @@ export function HomeView() {
   const [char, setChar] = useState<PracticeChar | null>(null);
   const [boss, setBoss] = useState<BossDef | null>(null);
   const [weekly, setWeekly] = useState<PracticeChar | null>(null);
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     const raw = loadState();
@@ -46,10 +50,21 @@ export function HomeView() {
     setBoss(ensured.boss);
     setWeekly(pickWeeklyChar());
     setHour(new Date().getHours());
+    setShowRules(!loadRulesSeen());
   }, []);
 
   if (!state || !char || !boss || !round) {
     return <div className="flex-1 px-5 pt-16 text-ink-soft">紙を広げています…</div>;
+  }
+
+  if (showRules) {
+    return (
+      <RulesIntro
+        char={char}
+        href={roundHref(char.id)}
+        onStay={() => setShowRules(false)}
+      />
+    );
   }
 
   const adopted = round.adoptedEntryId
@@ -61,45 +76,30 @@ export function HomeView() {
   return (
     <div className="flex flex-1 flex-col px-5 pt-[max(1.4rem,env(safe-area-inset-top))] pb-6">
       <header className="pt-4">
-        <p className="text-[11px] tracking-[0.18em] text-gold">字をきれいに</p>
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] tracking-[0.18em] text-gold">字をきれいに</p>
+          <button
+            type="button"
+            className="text-[11px] tracking-wide text-ink-soft"
+            onClick={() => setShowRules(true)}
+          >
+            遊び方
+          </button>
+        </div>
         <h1 className="mt-2 font-serif text-[1.85rem] leading-snug">
           {greeting(hour)}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-          大人の字は、下手になったのではありません。速くなっただけです。
+          今日は一枚。お手本、本番、残す。それだけです。
         </p>
       </header>
 
-      <section className="mt-6 grid grid-cols-3 gap-2">
-        <Stat label="連続" value={state.streak ? `${state.streak}日` : "—"} />
-        <Stat label="見本帳" value={`${state.album.length}`} />
-        <Stat label="残した字" value={`${uniqueChars(state.album)}`} />
-      </section>
-
-      {!state.onboarded && (
-        <Link
-          href="/diagnose"
-          className="mt-5 block rounded-3xl bg-ink px-5 py-4 text-paper"
-        >
-          <p className="text-[11px] tracking-[0.2em] text-gold">はじめての方へ</p>
-          <p className="mt-1 font-serif text-xl">いまの字を、見てみましょう</p>
-          <p className="mt-1 text-sm text-paper/70">5字・約3分。癖がわかります。</p>
-        </Link>
-      )}
-
-      <div className="mt-5 rounded-3xl border border-ink/8 bg-white/35 px-5 py-4">
-        <p className="text-[11px] tracking-[0.2em] text-vermillion">癖 ・ {boss.name}</p>
-        <p className="mt-2 text-sm leading-relaxed">{boss.hint}</p>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/10">
-          <div
-            className="h-full rounded-full bg-vermillion/80"
-            style={{ width: `${(hp.hp / hp.maxHp) * 100}%` }}
-          />
-        </div>
-        <p className="mt-1.5 text-[11px] text-ink-soft">
-          {hp.defeatedAt ? "今日は、この癖を一回通しました。" : `残り ${hp.hp}`}
+      <section className="mt-5">
+        <PlaySteps variant="board" />
+        <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">
+          通った字が見本帳に残ります。癖は、通すたびに弱くなります。
         </p>
-      </div>
+      </section>
 
       <section className="mt-6">
         <p className="text-[11px] tracking-[0.22em] text-gold">きょうのラウンド</p>
@@ -115,7 +115,7 @@ export function HomeView() {
                 <p className="text-sm text-ink-soft">今日の相手 ・ {boss.name}</p>
                 <p className="mt-1 font-serif text-4xl leading-none">{char.char}</p>
                 <p className="mt-2 text-sm text-ink-soft">
-                  1本目はお手本あり。2本目が本番です。
+                  1本目はお手本の上。2本目が見ない本番です。
                 </p>
               </div>
               <span className="font-display text-6xl text-ink/85">{char.char}</span>
@@ -124,6 +124,37 @@ export function HomeView() {
           </Link>
         )}
       </section>
+
+      <section className="mt-6 grid grid-cols-3 gap-2">
+        <Stat label="連続" value={state.streak ? `${state.streak}日` : "—"} />
+        <Stat label="見本帳" value={`${state.album.length}`} />
+        <Stat label="残した字" value={`${uniqueChars(state.album)}`} />
+      </section>
+
+      {!state.onboarded && (
+        <Link
+          href="/diagnose"
+          className="mt-5 block rounded-3xl border border-ink/8 bg-white/40 px-5 py-4"
+        >
+          <p className="text-[11px] tracking-[0.2em] text-gold">はじめての方へ</p>
+          <p className="mt-1 font-serif text-xl">いまの癖を、見てみる</p>
+          <p className="mt-1 text-sm text-ink-soft">5字・約3分。相手の名前がわかります。</p>
+        </Link>
+      )}
+
+      <div className="mt-5 rounded-3xl border border-ink/8 bg-white/35 px-5 py-4">
+        <p className="text-[11px] tracking-[0.2em] text-vermillion">癖 ・ {boss.name}</p>
+        <p className="mt-2 text-sm leading-relaxed">{boss.hint}</p>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/10">
+          <div
+            className="h-full rounded-full bg-vermillion/80"
+            style={{ width: `${(hp.hp / hp.maxHp) * 100}%` }}
+          />
+        </div>
+        <p className="mt-1.5 text-[11px] text-ink-soft">
+          {hp.defeatedAt ? "今日は、この癖を一回通しました。" : `残り ${hp.hp} ・ 本番で通すと減ります`}
+        </p>
+      </div>
 
       {weekly && (
         <section className="mt-6">

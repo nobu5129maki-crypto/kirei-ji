@@ -7,6 +7,7 @@ import { DIAGNOSE_IDS, getChar } from "@/lib/characters";
 import { markOnboarded, recordScore, type Diagnosis } from "@/lib/storage";
 import { scoreHandwriting, summarizeDiagnosis } from "@/lib/scoring";
 import { WritingPad, type WritingPadHandle } from "./WritingPad";
+import { PlaySteps } from "./PlaySteps";
 
 const ids = [...DIAGNOSE_IDS];
 
@@ -64,8 +65,11 @@ export function DiagnoseView() {
           {diagnosis?.note}
         </p>
         <p className="mt-6 text-sm leading-relaxed">
-          これから毎日、一文字。癖に名前をつけて、通った字だけ見本帳に残します。
+          これから毎日、一枚。お手本のあと本番。通った字だけ、見本帳に残します。
         </p>
+        <div className="mt-6">
+          <PlaySteps variant="board" />
+        </div>
         <button type="button" className="btn-ink mt-8" onClick={() => router.push("/")}>
           紙を開く
         </button>

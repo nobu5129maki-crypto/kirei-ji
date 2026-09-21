@@ -82,3 +82,8 @@ body {
     stroke-dashoffset: 0;
   }
 }
+
+html.rules-open nav {
+  visibility: hidden;
+  pointer-events: none;
+}

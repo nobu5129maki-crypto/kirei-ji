@@ -11,6 +11,7 @@ import {
   recordScore,
   saveAlbumEntry,
 } from "@/lib/storage";
+import { PlaySteps, type PlayBeat } from "./PlaySteps";
 import { scoreHandwriting, type ScoreBreakdown } from "@/lib/scoring";
 import { StrokeGuide } from "./StrokeGuide";
 import { WritingPad, type WritingPadHandle } from "./WritingPad";
@@ -124,6 +125,12 @@ export function PracticeView({
       ? `${index + 1} / ${queue.length}`
       : "練習";
 
+  const railCurrent: PlayBeat | undefined = twoPhase
+    ? score && leg === "honban"
+      ? "keep"
+      : leg
+    : undefined;
+
   return (
     <div className="flex min-h-dvh flex-col px-4 pt-[max(0.8rem,env(safe-area-inset-top))] pb-4">
       <header className="flex items-center justify-between">
@@ -133,6 +140,12 @@ export function PracticeView({
         <p className="text-[11px] tracking-[0.2em] text-ink-soft">{stepLabel}</p>
         <span className="w-10" />
       </header>
+
+      {twoPhase && (
+        <div className="mt-4">
+          <PlaySteps variant="rail" current={railCurrent} />
+        </div>
+      )}
 
       <div className="mt-3 flex items-end justify-between gap-3">
         <div>
