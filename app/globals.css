@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f4efe6;
+  --paper-deep: #e8dfd0;
+  --desk: #d9cbb6;
+  --ink: #1c1916;
+  --ink-soft: #5c564e;
+  --gold: #9a7348;
+  --vermillion: #c45c4a;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-desk: var(--desk);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-gold: var(--gold);
+  --color-vermillion: var(--vermillion);
+  --font-sans: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-serif: "Shippori Mincho", "Yu Mincho", serif;
+  --font-display: "Klee One", "Yu Mincho", serif;
+}
+
+html {
+  background: var(--desk);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+}
+
+.font-serif {
+  font-family: "Shippori Mincho", "Yu Mincho", serif;
+}
+
+.font-display {
+  font-family: "Klee One", "Yu Mincho", serif;
+}
+
+.btn-ink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.85rem 1.2rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--paper-deep);
+  color: var(--ink);
+  padding: 0.85rem 1.1rem;
+  font-size: 0.9rem;
+}
+
+.stroke-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: write-stroke 0.7s ease forwards;
+}
+
+@keyframes write-stroke {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stroke-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
