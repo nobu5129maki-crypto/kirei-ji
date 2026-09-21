@@ -30,7 +30,8 @@ export function PracticeView({
   const index = Math.max(0, queue.indexOf(char.id));
   const nextId = queue[index + 1];
   const nextChar = nextId ? getChar(nextId) : undefined;
-  const backHref = from === "lessons" ? "/lessons" : from === "diagnose" ? "/" : "/";
+  const backHref =
+    from === "lessons" ? "/lessons" : from === "tips" ? "/tips" : "/";
 
   const modelLabel = useMemo(
     () => (char.kind === "kanji" ? char.reading : char.kind === "katakana" ? "カタカナ" : "ひらがな"),
@@ -56,7 +57,9 @@ export function PracticeView({
 
   const goNext = () => {
     if (!nextId) {
-      router.push(from === "lessons" ? "/lessons" : "/progress");
+      router.push(
+        from === "lessons" ? "/lessons" : from === "tips" ? "/tips" : "/progress",
+      );
       return;
     }
     const q = encodeURIComponent(queue.join(","));

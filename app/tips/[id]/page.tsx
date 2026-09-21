@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getChar } from "@/lib/characters";
 import { getTip, TIPS } from "@/lib/tips";
 
 export function generateStaticParams() {
@@ -14,6 +15,7 @@ export default async function TipArticlePage({
   const { id } = await params;
   const tip = getTip(id);
   if (!tip) notFound();
+  const writeChar = getChar(tip.writeId);
 
   return (
     <article className="px-5 pt-[max(1.4rem,env(safe-area-inset-top))] pb-12">
@@ -27,9 +29,15 @@ export default async function TipArticlePage({
           <p key={p}>{p}</p>
         ))}
       </div>
-      <Link href="/" className="btn-ink mt-10 inline-flex">
-        一文字、書いてみる
-      </Link>
+      {writeChar && (
+        <Link
+          href={`/practice/${encodeURIComponent(writeChar.id)}?from=tips`}
+          className="btn-ink mt-10 flex w-full items-center justify-center gap-3"
+        >
+          <span className="font-display text-2xl leading-none">{writeChar.char}</span>
+          <span>を書いてみる</span>
+        </Link>
+      )}
     </article>
   );
 }
