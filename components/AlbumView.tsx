@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CHAR_BY_ID, getChar, practicePath } from "@/lib/characters";
-import { BOSSES, bossProgress } from "@/lib/game";
+import { BOSSES, bossHuntHref, bossProgress } from "@/lib/game";
 import { BossMeter } from "./BossMeter";
 import {
   COVER_SCORE,
@@ -119,7 +119,12 @@ export function AlbumView() {
             const hp = bossProgress(state, boss.id);
             return (
               <li key={boss.id} className="rounded-2xl bg-white/40 px-4 py-3">
-                <BossMeter name={boss.name} hint={boss.hint} hp={hp} />
+                <BossMeter
+                  name={boss.name}
+                  hint={boss.hint}
+                  hp={hp}
+                  huntHref={bossHuntHref(boss)}
+                />
               </li>
             );
           })}
@@ -203,10 +208,10 @@ function CompareSheet({
             : "きょう残した一枚です。"}
         </p>
         <Link
-          href={`${practicePath(char.id)}?from=album`}
+          href={`${practicePath(char.id)}?from=boss`}
           className="btn-ink mt-4 w-full"
         >
-          この字をもう一度
+          この字で、癖を削る
         </Link>
       </div>
     </div>

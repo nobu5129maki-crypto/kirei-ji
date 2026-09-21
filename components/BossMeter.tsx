@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { bossMeterReadout } from "@/lib/game";
 import type { BossState } from "@/lib/storage";
 
@@ -7,10 +8,12 @@ export function BossMeter({
   name,
   hint,
   hp,
+  huntHref,
 }: {
   name: string;
   hint: string;
   hp: BossState;
+  huntHref?: string;
 }) {
   const { percent, stage, caption } = bossMeterReadout(hp);
   const cleared = percent === 0;
@@ -69,6 +72,11 @@ export function BossMeter({
         </span>
       </div>
       <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">{caption}</p>
+      {huntHref && !cleared && (
+        <Link href={huntHref} className="btn-ink mt-4 w-full">
+          この癖を、削る
+        </Link>
+      )}
     </div>
   );
 }

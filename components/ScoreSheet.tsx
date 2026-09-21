@@ -2,7 +2,8 @@
 
 import type { ScoreBreakdown } from "@/lib/scoring";
 import { FOCUS_LABEL, type PracticeChar } from "@/lib/characters";
-import { ADOPT_SCORE, COVER_SCORE } from "@/lib/storage";
+import { relatedLivingBoss } from "@/lib/game";
+import { ADOPT_SCORE, BOSS_HIT_SCORE, COVER_SCORE } from "@/lib/storage";
 
 const axes: { key: keyof Pick<ScoreBreakdown, "size" | "tilt" | "center" | "shape">; label: string }[] = [
   { key: "size", label: "大きさ" },
@@ -30,15 +31,22 @@ export function ScoreSheet({
 }) {
   const passed = !score.empty && score.overall >= ADOPT_SCORE;
   const cover = !score.empty && score.overall >= COVER_SCORE;
+  const cutsHabit =
+    phase === "honban" &&
+    !score.empty &&
+    score.overall >= BOSS_HIT_SCORE &&
+    Boolean(relatedLivingBoss(char));
   const verdict = score.empty
     ? "書けたら、見てみるを押してください。"
     : phase === "warmup"
       ? "終わり方だけ残して、本番へ。"
-      : cover
-        ? "見本帳の表紙候補です。残しましょう。"
-        : passed
-          ? "通った。仕事で使ってよい字です。"
-          : "もう一枚。終わり方だけ意識して。";
+      : cutsHabit
+        ? "残すと、癖のパーセントが下がります。何度でも削ってよい。"
+        : cover
+          ? "見本帳の表紙候補です。残しましょう。"
+          : passed
+            ? `通った。癖を削るなら、${BOSS_HIT_SCORE}以上でもう一枚。`
+            : `もう一枚。${BOSS_HIT_SCORE}以上で残すと、癖が下がります。`;
 
   return (
     <div className="flex flex-col gap-5">

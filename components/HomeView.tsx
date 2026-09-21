@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
+  bossHuntHref,
   bossProgress,
   ensureTodayRound,
   pickWeeklyChar,
@@ -30,7 +31,7 @@ import type { PracticeChar } from "@/lib/characters";
 function greeting(hour: number): string {
   if (hour < 11) return "おはようございます";
   if (hour < 18) return "こんにちは";
-  return "今日も、一枚だけ";
+  return "今日も、整える";
 }
 
 export function HomeView() {
@@ -91,25 +92,34 @@ export function HomeView() {
           {greeting(hour)}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-          今日は一枚。お手本、本番、残す。それだけです。
+          今日の一枚は、儀式。癖は、気が済むまで何度でも削ってよい。
         </p>
       </header>
 
       <section className="mt-5">
         <PlaySteps variant="board" />
         <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">
-          通った字が見本帳に残ります。癖のパーセントは、よく書けて残すと下がります。
+          通った字が見本帳に残ります。癖は、整い度80以上で残すたびに下がります。
         </p>
       </section>
 
       <div className="mt-5 rounded-3xl border border-ink/8 bg-white/35 px-5 py-4">
-        <BossMeter name={boss.name} hint={boss.hint} hp={hp} />
+        <BossMeter
+          name={boss.name}
+          hint={boss.hint}
+          hp={hp}
+          huntHref={bossHuntHref(boss, char.id)}
+        />
       </div>
 
       <section className="mt-6">
         <p className="text-[11px] tracking-[0.22em] text-gold">きょうのラウンド</p>
         {adopted ? (
-          <AdoptedCard entry={adopted} char={char} href={roundHref(char.id)} />
+          <AdoptedCard
+            entry={adopted}
+            char={char}
+            href={bossHuntHref(boss, char.id)}
+          />
         ) : (
           <Link
             href={roundHref(char.id)}
@@ -242,7 +252,7 @@ function AdoptedCard({
         {entry.score >= COVER_SCORE ? " ・ 表紙候補" : " ・ 残しました"}
       </p>
       <Link href={href} className="btn-ghost mt-4 w-full">
-        もう一枚
+        この字で、癖を削る
       </Link>
     </div>
   );

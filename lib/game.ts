@@ -14,6 +14,8 @@ import {
   setTodayRound,
   todayStamp,
   weakestIds,
+  BOSS_HIT_SCORE,
+  COVER_SCORE,
   type AppState,
   type BossState,
   type Diagnosis,
@@ -188,10 +190,10 @@ export function bossMeterReadout(hp: BossState): {
             : "もう少し";
   const caption =
     percent >= 85
-      ? "本番でよく書けて残すと、このパーセントが下がります。"
+      ? "よく書けて残すと下がります。今日の一枚のあとでも、何度でも削れます。"
       : left <= 1
-        ? "本番でもう一枚、整えばおさまります。"
-        : `整った本番が、あと${left}回ほど。`;
+        ? "もう一枚、整えばおさまります。"
+        : `整った本番が、あと${left}回。気が済むまで削ってよい。`;
   return { percent, stage, caption };
 }
 
@@ -227,14 +229,35 @@ export function ensureTodayRound(state: AppState): { state: AppState; round: Tod
   return { state: next, round, char, boss };
 }
 
-export function applyAdoptHit(char: PracticeChar, score: number, bossId: string): void {
-  if (score < 80) return;
-  const boss = BOSSES.find((b) => b.id === bossId);
-  if (!boss) return;
-  const related =
-    boss.focuses.includes(char.focus) || boss.characterIds.includes(char.id);
-  if (!related) return;
-  hitBoss(bossId, score >= 90 ? 34 : 25);
+export function applyAdoptHit(char: PracticeChar, score: number): boolean {
+  if (score < BOSS_HIT_SCORE) return false;
+  const state = ensureBosses(loadState());
+  const related = relatedLivingBoss(char, state);
+  if (!related) return false;
+  const cur = state.bosses[related.id];
+  if (!cur || cur.defeatedAt) return false;
+  hitBoss(related.id, score >= COVER_SCORE ? 34 : 25);
+  return true;
+}
+
+export function relatedLivingBoss(
+  char: PracticeChar,
+  state = loadState(),
+): BossDef | undefined {
+  const living = BOSSES.filter((b) => {
+    const cur = state.bosses[b.id];
+    return Boolean(cur && !cur.defeatedAt);
+  });
+  return living.find(
+    (b) => b.focuses.includes(char.focus) || b.characterIds.includes(char.id),
+  );
+}
+
+export function bossHuntHref(boss: BossDef, preferId?: string): string {
+  const ids = boss.characterIds.filter((id) => CHAR_BY_ID[id]);
+  const start =
+    (preferId && ids.includes(preferId) ? preferId : ids[0]) ?? boss.characterIds[0];
+  return `${practicePath(start)}?from=boss`;
 }
 
 export function roundHref(charId: string, from = "round"): string {
@@ -256,5 +279,9 @@ export function themeLabel(char: PracticeChar, boss: BossDef): string {
 }
 
 export function isTwoPhase(from?: string): boolean {
-  return from === "round" || from === "boss" || from === "weekly";
+  return from === "round" || from === "weekly";
+}
+
+export function isBossHunt(from?: string): boolean {
+  return from === "boss";
 }

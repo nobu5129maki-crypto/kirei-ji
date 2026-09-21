@@ -4,10 +4,9 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FOCUS_LABEL, getChar, practicePath, type PracticeChar } from "@/lib/characters";
-import { applyAdoptHit, isTwoPhase, activeBoss } from "@/lib/game";
+import { applyAdoptHit, isBossHunt, isTwoPhase } from "@/lib/game";
 import {
   captureSheet,
-  loadState,
   recordScore,
   saveAlbumEntry,
 } from "@/lib/storage";
@@ -29,6 +28,7 @@ export function PracticeView({
   const router = useRouter();
   const padRef = useRef<WritingPadHandle>(null);
   const twoPhase = isTwoPhase(from);
+  const hunting = isBossHunt(from);
   const isScene = from === "scenes";
   const [leg, setLeg] = useState<"warmup" | "honban">(twoPhase ? "warmup" : "honban");
   const [ghost, setGhost] = useState(true);
@@ -38,6 +38,7 @@ export function PracticeView({
   const [score, setScore] = useState<ScoreBreakdown | null>(null);
   const [inkUrl, setInkUrl] = useState("");
   const [error, setError] = useState("");
+  const [cutNote, setCutNote] = useState("");
 
   const index = Math.max(0, queue.indexOf(char.id));
   const nextId = queue[index + 1];
@@ -56,7 +57,7 @@ export function PracticeView({
     [char],
   );
 
-  const sheetPhase = twoPhase ? leg : isScene ? "honban" : "free";
+  const sheetPhase = twoPhase ? leg : hunting || isScene ? "honban" : "free";
 
   const onJudge = async () => {
     const canvas = padRef.current?.getInkCanvas();
@@ -108,8 +109,18 @@ export function PracticeView({
       image: inkUrl,
       focus: char.focus,
     });
-    const bossId = loadState().todayRound?.bossId ?? activeBoss(loadState()).id;
-    applyAdoptHit(char, score.overall, bossId);
+    const hit = applyAdoptHit(char, score.overall);
+    if (hunting) {
+      setScore(null);
+      setInkUrl("");
+      padRef.current?.clear();
+      setCutNote(
+        hit
+          ? "癖が、少し弱くなりました。気が済むまで続けて。"
+          : "残しました。整い度80以上なら、癖が下がります。",
+      );
+      return;
+    }
     if (isScene && nextId) {
       goNext();
       return;
@@ -117,13 +128,15 @@ export function PracticeView({
     router.push("/");
   };
 
-  const stepLabel = twoPhase
-    ? leg === "warmup"
-      ? "1本目 ・ お手本あり"
-      : "本番 ・ お手本なし"
-    : queue.length > 1
-      ? `${index + 1} / ${queue.length}`
-      : "練習";
+  const stepLabel = hunting
+    ? "癖を削る"
+    : twoPhase
+      ? leg === "warmup"
+        ? "1本目 ・ お手本あり"
+        : "本番 ・ お手本なし"
+      : queue.length > 1
+        ? `${index + 1} / ${queue.length}`
+        : "練習";
 
   const railCurrent: PlayBeat | undefined = twoPhase
     ? score && leg === "honban"
@@ -159,9 +172,13 @@ export function PracticeView({
       </div>
 
       <p className="mt-3 text-sm leading-relaxed text-ink-soft">
-        {twoPhase && leg === "honban"
-          ? "見ないで書く。さっきの終わり方だけ残して。"
-          : char.tips[0]}
+        {cutNote
+          ? cutNote
+          : hunting
+            ? "お手本を見て整えてよい。80以上で残すと、癖のパーセントが下がります。"
+            : twoPhase && leg === "honban"
+              ? "見ないで書く。さっきの終わり方だけ残して。"
+              : char.tips[0]}
       </p>
 
       {score ? (

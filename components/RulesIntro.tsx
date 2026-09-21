@@ -46,9 +46,9 @@ export function RulesIntro({
           </button>
         </div>
         <h1 id="rules-title" className="mt-5 font-serif text-[2rem] leading-snug">
-          今日は、
+          今日は、一枚。
           <br />
-          一枚だけ。
+          癖は、何度でも。
         </h1>
         <p className="mt-3 max-w-[20rem] text-sm leading-relaxed text-ink-soft">
           ドリルではありません。仕事で出す字を、一枚残していくゲームです。
@@ -59,7 +59,7 @@ export function RulesIntro({
         </div>
 
         <p className="mt-7 text-sm leading-relaxed text-ink-soft">
-          癖には名前と強さ（パーセント）があります。よく書けて残すと、数が下がります。
+          今日の一枚は区切りです。癖のパーセントは、整った字を残すたびに下がります。一日一回ではありません。気が済むまで削ってください。
         </p>
 
         <div className="mt-auto pt-8">
