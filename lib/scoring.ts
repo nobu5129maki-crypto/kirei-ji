@@ -15,6 +15,9 @@ export type ScoreBreakdown = {
 };
 
 const SIZE = 160;
+/** WritingPad のお手本と同じ。マスの 72% */
+const GHOST_EM = 0.72;
+const GHOST_NUDGE = 0.02;
 
 function luminance(r: number, g: number, b: number): number {
   return 0.299 * r + 0.587 * g + 0.114 * b;
@@ -159,10 +162,10 @@ function renderModel(
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, SIZE, SIZE);
   ctx.fillStyle = "#111111";
-  ctx.font = `700 ${Math.round(SIZE * 0.72)}px ${fontFamily}`;
+  ctx.font = `600 ${SIZE * GHOST_EM}px ${fontFamily}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(char, SIZE / 2, SIZE / 2 + SIZE * 0.02);
+  ctx.fillText(char, SIZE / 2, SIZE / 2 + SIZE * GHOST_NUDGE);
   return ctx.getImageData(0, 0, SIZE, SIZE);
 }
 
@@ -270,6 +273,41 @@ function pathEndPoint(d: string): { x: number; y: number } | null {
   return { x: nums[nums.length - 2], y: nums[nums.length - 1] };
 }
 
+type Bounds = { w: number; h: number; cx: number; cy: number };
+type Fit = { scale: number; dx: number; dy: number };
+
+function maskBounds(mask: Mask): Bounds | null {
+  if (!mask.count) return null;
+  return {
+    w: mask.maxX - mask.minX + 1,
+    h: mask.maxY - mask.minY + 1,
+    cx: (mask.minX + mask.maxX) / 2,
+    cy: (mask.minY + mask.maxY) / 2,
+  };
+}
+
+function measureDrawnBounds(
+  size: number,
+  paint: (ctx: CanvasRenderingContext2D) => void,
+): Bounds | null {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  paint(ctx);
+  return maskBounds(toMask(ctx.getImageData(0, 0, size, size)));
+}
+
+function fitBounds(src: Bounds, dst: Bounds): Fit {
+  const scale = Math.min(dst.w / Math.max(1, src.w), dst.h / Math.max(1, src.h));
+  return {
+    scale,
+    dx: dst.cx - src.cx * scale,
+    dy: dst.cy - src.cy * scale,
+  };
+}
+
 function drawModelGlyph(
   ctx: CanvasRenderingContext2D,
   char: string,
@@ -278,10 +316,10 @@ function drawModelGlyph(
   color: string,
 ) {
   ctx.fillStyle = color;
-  ctx.font = `600 ${Math.round(size * 0.72)}px ${fontFamily}`;
+  ctx.font = `600 ${size * GHOST_EM}px ${fontFamily}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(char, size / 2, size / 2 + size * 0.02);
+  ctx.fillText(char, size / 2, size / 2 + size * GHOST_NUDGE);
 }
 
 function drawModelStrokes(
@@ -300,10 +338,25 @@ function drawModelStrokes(
   ctx.lineWidth = width / scale;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.fillStyle = "transparent";
   for (const d of paths) {
     ctx.stroke(new Path2D(d));
   }
+  ctx.restore();
+}
+
+function withFit(
+  ctx: CanvasRenderingContext2D,
+  fit: Fit | null,
+  paint: () => void,
+) {
+  if (!fit) {
+    paint();
+    return;
+  }
+  ctx.save();
+  ctx.translate(fit.dx, fit.dy);
+  ctx.scale(fit.scale, fit.scale);
+  paint();
   ctx.restore();
 }
 
@@ -315,19 +368,18 @@ function drawHaraiMarks(
 ) {
   const { w, h } = parseViewBox(viewBox);
   const scale = size / Math.max(w, h);
-  ctx.save();
+  const pad = size * 0.08;
   ctx.fillStyle = "#C45C4A";
-  ctx.strokeStyle = "#C45C4A";
   for (const d of paths) {
     const end = pathEndPoint(d);
     if (!end) continue;
     const x = end.x * scale;
     const y = end.y * scale;
+    if (x < pad || y < pad || x > size - pad || y > size - pad) continue;
     ctx.beginPath();
-    ctx.arc(x, y, size * 0.028, 0, Math.PI * 2);
+    ctx.arc(x, y, Math.max(4, size * 0.018), 0, Math.PI * 2);
     ctx.fill();
   }
-  ctx.restore();
 }
 
 function punchUserInk(
@@ -337,12 +389,30 @@ function punchUserInk(
 ) {
   ctx.save();
   ctx.globalCompositeOperation = "destination-out";
-  ctx.filter = "blur(3.2px)";
+  ctx.filter = "blur(4.5px)";
   ctx.drawImage(user, 0, 0, size, size);
   ctx.filter = "none";
-  ctx.globalAlpha = 0.92;
+  ctx.globalAlpha = 0.95;
   ctx.drawImage(user, 0, 0, size, size);
   ctx.restore();
+}
+
+function modelFitForGhost(
+  char: string,
+  fontFamily: string,
+  paths: string[] | undefined,
+  viewBox: string,
+  size: number,
+): Fit | null {
+  const ghost = measureDrawnBounds(size, (ctx) => {
+    drawModelGlyph(ctx, char, fontFamily, size, "#111111");
+  });
+  if (!ghost || !paths?.length) return null;
+  const strokes = measureDrawnBounds(size, (ctx) => {
+    drawModelStrokes(ctx, paths, viewBox, size, "#111111", 5.4);
+  });
+  if (!strokes) return null;
+  return fitBounds(strokes, ghost);
 }
 
 /** 黒＝いまの字、赤＝足りないところ・直したい終わり方 */
@@ -374,8 +444,18 @@ async function renderCorrectionPreview(
   const mctx = model.getContext("2d");
   if (!mctx) return canvas.toDataURL("image/png");
 
+  const fit = modelFitForGhost(
+    char.char,
+    fontFamily,
+    strokes?.paths,
+    strokes?.viewBox ?? "0 0 109 109",
+    out,
+  );
+
   if (strokes?.paths.length) {
-    drawModelStrokes(mctx, strokes.paths, strokes.viewBox, out, "#C45C4A", 7.2);
+    withFit(mctx, fit, () => {
+      drawModelStrokes(mctx, strokes.paths, strokes.viewBox, out, "#C45C4A", 5.6);
+    });
   } else {
     drawModelGlyph(mctx, char.char, fontFamily, out, "#C45C4A");
   }
@@ -400,7 +480,9 @@ async function renderCorrectionPreview(
       if (tctx) {
         const tipPaths =
           char.focus === "harai" ? strokes.paths.slice(-2) : strokes.paths.slice(-1);
-        drawHaraiMarks(tctx, tipPaths, strokes.viewBox, out);
+        withFit(tctx, fit, () => {
+          drawHaraiMarks(tctx, tipPaths, strokes.viewBox, out);
+        });
         punchUserInk(tctx, userCanvas, out);
         ctx.drawImage(tips, 0, 0);
       }
@@ -425,7 +507,7 @@ export async function scoreHandwriting(
   await document.fonts.ready;
   const fontFamily = `"Klee One", "Yu Mincho", "Hiragino Mincho ProN", serif`;
   try {
-    await document.fonts.load(`700 ${Math.round(SIZE * 0.72)}px "Klee One"`);
+    await document.fonts.load(`600 ${SIZE * GHOST_EM}px "Klee One"`);
   } catch {
     /* keep fallback */
   }
