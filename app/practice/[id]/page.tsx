@@ -14,10 +14,10 @@ export default async function PracticePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ queue?: string; from?: string; boss?: string; grade?: string; pack?: string }>;
+  searchParams: Promise<{ queue?: string; from?: string; boss?: string; grade?: string; pack?: string; at?: string }>;
 }) {
   const { id: rawId } = await params;
-  const { queue, from, boss: rawBoss, grade, pack } = await searchParams;
+  const { queue, from, boss: rawBoss, grade, pack, at } = await searchParams;
   const id = normalizeCharId(rawId);
   const char = getChar(id);
   if (!char) notFound();
@@ -27,8 +27,19 @@ export default async function PracticePage({
       : [char.id]
   ).filter((value): value is string => Boolean(value));
   if (!ids.includes(char.id)) ids.unshift(char.id);
+  const atNum = Number(at);
+  const atIndex = Number.isInteger(atNum) && atNum >= 0 && atNum < ids.length ? atNum : undefined;
   const bossId = BOSSES.some((b) => b.id === rawBoss) ? rawBoss : undefined;
   return (
-    <PracticeView char={char} queue={ids} from={from} bossId={bossId} grade={grade} packId={pack} />
+    <PracticeView
+      key={`${char.id}:${atIndex ?? "auto"}`}
+      char={char}
+      queue={ids}
+      from={from}
+      bossId={bossId}
+      grade={grade}
+      packId={pack}
+      at={atIndex}
+    />
   );
 }

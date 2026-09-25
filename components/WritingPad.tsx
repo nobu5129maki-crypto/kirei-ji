@@ -168,8 +168,13 @@ export const WritingPad = forwardRef<WritingPadHandle, Props>(
       paintInk();
     };
 
-    const endStroke = () => {
+    const endStroke = (e: ReactPointerEvent<HTMLCanvasElement>) => {
       if (!currentRef.current) return;
+      const point = pointFromEvent(e);
+      const last = currentRef.current[currentRef.current.length - 1];
+      if (!last || Math.hypot(last.x - point.x, last.y - point.y) > 0.5) {
+        currentRef.current.push(point);
+      }
       if (currentRef.current.length > 0) {
         strokesRef.current = [...strokesRef.current, currentRef.current];
       }

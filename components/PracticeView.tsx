@@ -25,6 +25,7 @@ export function PracticeView({
   bossId,
   grade,
   packId,
+  at,
 }: {
   char: PracticeChar;
   queue: string[];
@@ -32,6 +33,7 @@ export function PracticeView({
   bossId?: string;
   grade?: string;
   packId?: string;
+  at?: number;
 }) {
   const router = useRouter();
   const padRef = useRef<WritingPadHandle>(null);
@@ -51,7 +53,8 @@ export function PracticeView({
   const [error, setError] = useState("");
   const [cutNote, setCutNote] = useState("");
 
-  const index = Math.max(0, queue.indexOf(char.id));
+  const found = queue.indexOf(char.id);
+  const index = at !== undefined && queue[at] === char.id ? at : found >= 0 ? found : 0;
   const nextId = queue[index + 1];
   const nextChar = nextId ? getChar(nextId) : undefined;
   const backHref =
@@ -108,6 +111,7 @@ export function PracticeView({
       bossId ? `boss=${encodeURIComponent(bossId)}` : "",
       grade ? `grade=${encodeURIComponent(grade)}` : "",
       packId ? `pack=${encodeURIComponent(packId)}` : "",
+      `at=${index + 1}`,
     ]
       .filter(Boolean)
       .join("&");
@@ -250,12 +254,12 @@ export function PracticeView({
                   overlay
                   onComplete={() => setGuide(false)}
                 />
-                <p className="absolute right-0 bottom-2 left-0 text-center text-[12px] text-vermillion">
-                  そのままで書けます
-                </p>
               </div>
             )}
           </div>
+          {guide && (
+            <p className="mt-2 text-center text-[12px] text-vermillion">そのままで書けます</p>
+          )}
 
           <div className="mt-3 flex flex-wrap gap-2">
             {!twoPhase && (
