@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink as Link } from "@/components/AppLink";
 import { bossMeterReadout } from "@/lib/game";
 import type { BossState } from "@/lib/storage";
 

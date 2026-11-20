@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
+import { AppLink as Link } from "@/components/AppLink";
 import { markRulesSeen } from "@/lib/storage";
 import type { PracticeChar } from "@/lib/characters";
 import { PlaySteps } from "./PlaySteps";

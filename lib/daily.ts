@@ -47,5 +47,5 @@ export function pickDaily(count = 3): string[] {
 export function queueHref(ids: string[], from?: string): string {
   const q = encodeURIComponent(ids.join(","));
   const extra = from ? `&from=${encodeURIComponent(from)}` : "";
-  return `${practicePath(ids[0])}?queue=${q}${extra}`;
+  return `${practicePath(ids[0])}&queue=${q}${extra}`;
 }

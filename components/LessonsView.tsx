@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink as Link } from "@/components/AppLink";
 import { useEffect, useState } from "react";
 import { LESSONS, lessonChars } from "@/lib/lessons";
 import { loadState } from "@/lib/storage";

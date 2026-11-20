@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { AppLink as Link } from "@/components/AppLink";
+import { go } from "@/lib/nav";
 import { FOCUS_LABEL, getChar, practicePath, type PracticeChar } from "@/lib/characters";
 import { applyAdoptHit, isBossHunt, isTwoPhase, resolveHitBoss } from "@/lib/game";
 import { getPack } from "@/lib/school";
@@ -35,7 +35,6 @@ export function PracticeView({
   packId?: string;
   at?: number;
 }) {
-  const router = useRouter();
   const padRef = useRef<WritingPadHandle>(null);
   const twoPhase = isTwoPhase(from);
   const hunting = isBossHunt(from);
@@ -102,7 +101,7 @@ export function PracticeView({
 
   const goNext = () => {
     if (!nextId) {
-      router.push(backHref);
+      go(backHref);
       return;
     }
     const q = encodeURIComponent(queue.join(","));
@@ -115,7 +114,7 @@ export function PracticeView({
     ]
       .filter(Boolean)
       .join("&");
-    router.push(`${practicePath(nextId)}?queue=${q}${extra ? `&${extra}` : ""}`);
+    go(`${practicePath(nextId)}&queue=${q}${extra ? `&${extra}` : ""}`);
   };
 
   const retry = () => {
@@ -159,7 +158,7 @@ export function PracticeView({
       goNext();
       return;
     }
-    router.push(backHref);
+    go(backHref);
   };
 
   const stepLabel = hunting

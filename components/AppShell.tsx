@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { AppLink as Link } from "@/components/AppLink";
+import { registerAppServiceWorker, useAppPathname } from "@/lib/nav";
 
 const items = [
   { href: "/", label: "きょう", icon: SunIcon },
@@ -12,15 +12,11 @@ const items = [
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        /* 無視 */
-      });
-    }
+    registerAppServiceWorker();
   }, []);
   // レイアウトは静的プリレンダされるため、パスに依存するナビはマウント後に出す
   const hideNav =

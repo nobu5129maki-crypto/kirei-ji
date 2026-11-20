@@ -298,13 +298,13 @@ export function schoolHref(packItem: SchoolPack): string {
     grade: packItem.grade,
     pack: packItem.id,
   });
-  return `${practicePath(ids[0])}?${q.toString()}`;
+  return `${practicePath(ids[0])}&${q.toString()}`;
 }
 
 export function schoolCharHref(glyph: string, grade: SchoolGradeId): string {
   const id = schoolId(glyph);
   const q = new URLSearchParams({ from: "school", grade });
-  return `${practicePath(id)}?${q.toString()}`;
+  return `${practicePath(id)}&${q.toString()}`;
 }
 
 function daySeed(stamp: string): number {
