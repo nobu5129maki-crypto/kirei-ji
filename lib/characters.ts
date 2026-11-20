@@ -664,7 +664,8 @@ export function getChar(id: string): PracticeChar | undefined {
 
 export function practicePath(id: string): string {
   const c = getChar(id);
-  return `/practice/${c ? charSlug(c) : encodeURIComponent(id)}`;
+  const slug = c ? charSlug(c) : encodeURIComponent(id);
+  return `/practice?id=${encodeURIComponent(slug)}`;
 }
 
 export function charsByKind(kind: CharKind): PracticeChar[] {

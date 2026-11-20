@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { registerAppServiceWorker } from "@/lib/nav";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -28,11 +29,7 @@ export function PwaInstall() {
   const [hidden, setHidden] = useState(true);
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        /* オフライン登録失敗は無視 */
-      });
-    }
+    registerAppServiceWorker();
 
     setStandalone(isStandalone());
     setIos(isIos());

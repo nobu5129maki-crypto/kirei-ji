@@ -301,7 +301,7 @@ export function relatedLivingBoss(
 export function huntHref(charId: string, bossId?: string): string {
   const q = new URLSearchParams({ from: "boss" });
   if (bossId) q.set("boss", bossId);
-  return `${practicePath(charId)}?${q.toString()}`;
+  return `${practicePath(charId)}&${q.toString()}`;
 }
 
 export function charHuntHref(char: PracticeChar, preferredBoss?: BossDef): string {
@@ -328,12 +328,12 @@ export function meterHuntHref(boss: BossDef, today?: TodayRound | null): string 
 }
 
 export function roundHref(charId: string, from = "round"): string {
-  return `${practicePath(charId)}?from=${encodeURIComponent(from)}`;
+  return `${practicePath(charId)}&from=${encodeURIComponent(from)}`;
 }
 
 export function sceneHref(scene: Scene): string {
   const q = encodeURIComponent(scene.characterIds.join(","));
-  return `${practicePath(scene.characterIds[0])}?queue=${q}&from=scenes`;
+  return `${practicePath(scene.characterIds[0])}&queue=${q}&from=scenes`;
 }
 
 export function weeklyHref(charId: string): string {

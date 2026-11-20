@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { SchoolGradeView } from "@/components/SchoolGrade";
 import { SCHOOL_GRADES, type SchoolGradeId } from "@/lib/school";
 
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return SCHOOL_GRADES.map((g) => ({ grade: g.id }));
 }

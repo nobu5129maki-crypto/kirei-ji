@@ -5,7 +5,7 @@
   "description": "大人の字を、もう一度整える。漢字・ひらがなの矯正練習。",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/relativize-export.mjs",
     "start": "next start",
     "lint": "eslint"
   },

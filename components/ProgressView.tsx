@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppLink as Link } from "@/components/AppLink";
 import { useEffect, useState } from "react";
 import { CHAR_BY_ID, practicePath } from "@/lib/characters";
 import { queueHref } from "@/lib/daily";
@@ -79,7 +79,7 @@ export function ProgressView() {
             {weak.map((w) => (
               <li key={w.id}>
                 <Link
-                  href={`${practicePath(w.id)}?from=progress`}
+                  href={`${practicePath(w.id)}&from=progress`}
                   className="flex items-center gap-3 rounded-2xl bg-white/40 px-3 py-2"
                 >
                   <span className="font-display text-3xl">{w.char.char}</span>

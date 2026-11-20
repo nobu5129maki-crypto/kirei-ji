@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink as Link } from "@/components/AppLink";
 import { TIPS } from "@/lib/tips";
 
 export function TipsView() {

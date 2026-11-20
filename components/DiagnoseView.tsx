@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { AppLink as Link } from "@/components/AppLink";
+import { go } from "@/lib/nav";
 import { DIAGNOSE_IDS, getChar } from "@/lib/characters";
 import { markOnboarded, recordScore, type Diagnosis } from "@/lib/storage";
 import { scoreHandwriting, summarizeDiagnosis } from "@/lib/scoring";
@@ -13,7 +13,6 @@ import { ReadingLine } from "./ReadingLine";
 const ids = [...DIAGNOSE_IDS];
 
 export function DiagnoseView() {
-  const router = useRouter();
   const padRef = useRef<WritingPadHandle>(null);
   const [step, setStep] = useState(0);
   const [samples, setSamples] = useState<
@@ -71,7 +70,7 @@ export function DiagnoseView() {
         <div className="mt-6">
           <PlaySteps variant="board" />
         </div>
-        <button type="button" className="btn-ink mt-8" onClick={() => router.push("/")}>
+        <button type="button" className="btn-ink mt-8" onClick={() => go("/")}>
           紙を開く
         </button>
       </div>

@@ -1,7 +1,9 @@
-import Link from "next/link";
+import { AppLink as Link } from "@/components/AppLink";
 import { notFound } from "next/navigation";
 import { getTip, TIPS } from "@/lib/tips";
 import { practicePath } from "@/lib/characters";
+
+export const dynamicParams = false;
 
 export function generateStaticParams() {
   return TIPS.map((t) => ({ id: t.id }));
@@ -29,7 +31,7 @@ export default async function TipArticlePage({
         ))}
       </div>
       <Link
-        href={`${practicePath(tip.practiceId)}?from=tips`}
+        href={`${practicePath(tip.practiceId)}&from=tips`}
         className="btn-ink mt-10 inline-flex"
       >
         一文字、書いてみる
